@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# 虚拟环境
+.venv/
+venv/
+env/
+
+# 工具缓存与报告
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# 环境变量 / 密钥
+.env
+.env.*
+
+# 本地规划/说明文档（暂不入库）
+NEW_PROJECT_ROADMAP.md
+README.md
+THIRD_PARTY_NOTICES.md
+docs/upstream-notes.md
+
+# 本地数据（RAG 语料、向量库、画像存储）
+data/
+
+# IDE
+.idea/
+.vscode/

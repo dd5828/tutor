@@ -1,0 +1,53 @@
+# nnnu — 教育垂直 AI 辅导产品（参考 DeepTutor 架构自研）
+# 说明：
+# - license 待定（见 NEW_PROJECT_ROADMAP.md §2.1）
+# - LLM SDK 依赖待定（首家供应商决策后，Day 5 添加）
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "nnnu"
+version = "0.1.0"
+description = "教育垂直 AI 辅导产品：agent-native 两层插件架构（参考 DeepTutor 自研）"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+    "mypy>=1.11",
+]
+
+[project.scripts]
+nnnu = "nnnu.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/nnnu"]
+
+# ── 工程质量（路线图 §7：CI = ruff + mypy + pytest）────────────────
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "ASYNC", "RUF"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["src"]
+# 覆盖率目标：core 层 >90%（路线图 Phase 0 验收）。CI 中运行：
+#   pytest --cov=nnnu --cov-report=term-missing
