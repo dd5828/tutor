@@ -22,11 +22,8 @@ htmlcov/
 .env
 .env.*
 
-# 本地规划/说明文档（暂不入库）
-NEW_PROJECT_ROADMAP.md
-README.md
-THIRD_PARTY_NOTICES.md
-docs/upstream-notes.md
+# 本地规划/说明文档（md 暂不入库）
+*.md
 
 # 本地数据（RAG 语料、向量库、画像存储）
 data/
