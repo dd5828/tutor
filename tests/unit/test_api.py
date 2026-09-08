@@ -46,3 +46,48 @@ def test_chat_ws_invalid_json_emits_error_event() -> None:
     assert event["type"] == "error"
     assert event["source"] == "api"
     assert event["content"] == "无效 JSON"
+
+
+def test_chat_ws_quiz_roundtrip_with_reply() -> None:
+    """反问教学循环端到端：出题 → wait_for_input → 发答案 → 批改 → done。"""
+    client = TestClient(create_app())
+    with client.websocket_connect("/chat") as ws:
+        ws.send_json({"message": "开始", "capability": "quiz"})
+        before = []
+        while True:
+            event = _recv(ws)
+            before.append(event)
+            if event["type"] == "wait_for_input":
+                break
+
+        assert [e["type"] for e in before] == [
+            "stage_start",
+            "content",
+            "stage_end",
+            "stage_start",
+            "wait_for_input",
+        ]
+        assert before[1]["content"].startswith("第 1 题")
+        assert before[4]["content"] == "请输入你的答案"
+
+        ws.send_text("56")  # 纯文本回复
+        after = []
+        while True:
+            event = _recv(ws)
+            after.append(event)
+            if event["type"] == "done":
+                break
+
+        assert [e["type"] for e in after] == ["content", "stage_end", "done"]
+        assert after[0]["content"] == "正确！"
+        assert after[2]["metadata"] == {"status": "completed"}
+
+
+def test_index_html_served_at_root() -> None:
+    client = TestClient(create_app())
+
+    resp = client.get("/")
+
+    assert resp.status_code == 200
+    assert "text/html" in resp.headers["content-type"]
+    assert "nnnu 辅导 Demo" in resp.text

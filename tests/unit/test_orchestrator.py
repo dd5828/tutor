@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import uuid
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator, AsyncIterator
 from typing import cast
 
 from nnnu.core import (
@@ -174,3 +174,50 @@ async def test_handle_uses_injected_registry_not_global() -> None:
     events = await _collect(orch.handle(TurnContext(user_message="hi")))
 
     assert events[-1].metadata == {"status": "completed"}
+
+
+class WaiterCapability(BaseCapability):
+    """等待反问回复的能力：记录收到的回复，回显内容。"""
+
+    def __init__(self) -> None:
+        self.manifest = CapabilityManifest(name="waiter", description="测试能力")
+        self.received: list[str] = []
+
+    async def run(self, context: TurnContext, bus: StreamBus) -> None:
+        reply = await bus.wait_for_input("请回答", source="waiter")
+        self.received.append(reply)
+        await bus.content(f"收到: {reply}", source="waiter")
+
+
+async def test_handle_routes_reply_queue_to_wait_for_input() -> None:
+    """反问桥：传输层投递到 reply_queue 的回复被转交总线，能力拿到答案。"""
+    waiter = WaiterCapability()
+    orch, _ = _registry_with(waiter)
+    queue: asyncio.Queue[str] = asyncio.Queue()
+
+    agen = orch.handle(TurnContext(active_capability="waiter"), reply_queue=queue)
+    first = await anext(agen)
+    assert first.type is StreamEventType.WAIT_FOR_INPUT
+    assert first.content == "请回答"
+
+    await queue.put("56")
+    rest = [event async for event in agen]
+
+    assert [e.type for e in rest] == [StreamEventType.CONTENT, StreamEventType.DONE]
+    assert rest[0].content == "收到: 56"
+    assert waiter.received == ["56"]
+
+
+async def test_handle_consumer_early_exit_wakes_waiter() -> None:
+    """消费者提前断开：反问等待者收到空输入收尾，任务不悬挂。"""
+    waiter = WaiterCapability()
+    orch, _ = _registry_with(waiter)
+    queue: asyncio.Queue[str] = asyncio.Queue()
+
+    agen = orch.handle(TurnContext(active_capability="waiter"), reply_queue=queue)
+    await anext(agen)  # 收到 WAIT_FOR_INPUT 后消费者断开
+
+    await cast(AsyncGenerator[StreamEvent, None], agen).aclose()
+    await asyncio.sleep(0.01)  # 给能力收尾的机会
+
+    assert waiter.received == [""]

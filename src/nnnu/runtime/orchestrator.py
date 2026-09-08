@@ -47,11 +47,20 @@ class Orchestrator:
         # 默认挂全局注册表；测试可注入独立实例。
         self._caps = caps if caps is not None else get_capability_registry()
 
-    async def handle(self, ctx: TurnContext) -> AsyncIterator[StreamEvent]:
+    async def handle(
+        self,
+        ctx: TurnContext,
+        *,
+        reply_queue: asyncio.Queue[str] | None = None,
+    ) -> AsyncIterator[StreamEvent]:
         """处理一轮对话，yield 流式事件。
 
         ``ctx.active_capability`` 指定能力；None 走默认 chat 能力。
         会话首次请求（session_id 为空）自动补发 UUID。
+
+        ``reply_queue``：反问（wait_for_input）与传输层的桥。轮次进行中，
+        传输层把用户回复放入队列，本方法转发给总线 submit_input；事件流
+        结束（含消费者提前断开）时自动取消转发任务。
         """
         if not ctx.session_id:
             ctx.session_id = str(uuid.uuid4())
@@ -102,6 +111,26 @@ class Orchestrator:
                 await bus.close()
 
         task = asyncio.create_task(_run())
-        async for event in bus.subscribe():
-            yield event
-        await task
+        drainer: asyncio.Task[None] | None = None
+        if reply_queue is not None:
+            drainer = asyncio.create_task(self._drain_replies(reply_queue, bus))
+        try:
+            async for event in bus.subscribe():
+                yield event
+        finally:
+            if drainer is not None:
+                drainer.cancel()
+            # 消费者提前断开时事件流退出：给反问等待者投递空输入，
+            # 让能力尽快收尾，避免 _run 任务永远悬挂在 wait_for_input 上
+            bus.submit_input("")
+            await task
+
+    async def _drain_replies(
+        self,
+        reply_queue: asyncio.Queue[str],
+        bus: StreamBus,
+    ) -> None:
+        """把传输层投递的用户回复转发给总线（反问等待的输入通道）。"""
+        while True:
+            reply = await reply_queue.get()
+            bus.submit_input(reply)

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>nnnu 辅导 Demo</title>
+<style>
+  :root { --bg: #f5f6f8; --panel: #fff; --text: #1a1d21; --muted: #6b7280;
+          --accent: #2563eb; --user: #dbeafe; --error: #dc2626; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
+         background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; }
+  header { display: flex; align-items: center; gap: 12px; padding: 10px 16px;
+           background: var(--panel); border-bottom: 1px solid #e5e7eb; }
+  header h1 { font-size: 16px; margin: 0; }
+  #stage { font-size: 13px; color: var(--muted); }
+  #stage.active { color: var(--accent); font-weight: 600; }
+  main { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .bubble { max-width: 78%; padding: 8px 12px; border-radius: 10px; white-space: pre-wrap;
+            word-break: break-word; font-size: 14px; line-height: 1.5; }
+  .bubble.user { align-self: flex-end; background: var(--user); }
+  .bubble.assistant { align-self: flex-start; background: var(--panel); border: 1px solid #e5e7eb; }
+  .bubble.error { align-self: flex-start; background: #fee2e2; color: var(--error); }
+  footer { display: flex; gap: 8px; padding: 10px 16px; background: var(--panel); border-top: 1px solid #e5e7eb; }
+  #input { flex: 1; padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; }
+  #send { padding: 9px 18px; border: none; border-radius: 8px; background: var(--accent);
+          color: #fff; font-size: 14px; cursor: pointer; }
+  #send:disabled { background: #9ca3af; cursor: not-allowed; }
+  #hint { font-size: 12px; color: var(--muted); align-self: center; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>nnnu 辅导 Demo</h1>
+    <select id="capability">
+      <option value="chat">chat（AI 辅导）</option>
+      <option value="quiz">quiz（反问练习）</option>
+      <option value="echo">echo（回显）</option>
+    </select>
+    <span id="stage"></span>
+  </header>
+  <main id="log"></main>
+  <footer>
+    <input id="input" placeholder="输入消息，回车发送…">
+    <button id="send">发送</button>
+    <span id="hint">连接中…</span>
+  </footer>
+
+<script>
+const log = document.getElementById('log');
+const input = document.getElementById('input');
+const sendBtn = document.getElementById('send');
+const hint = document.getElementById('hint');
+const stageEl = document.getElementById('stage');
+const sel = document.getElementById('capability');
+
+let ws = null;
+let state = 'idle';        // idle | streaming | awaiting
+let currentBubble = null;  // 流式内容追加目标
+const sessionId = crypto.randomUUID();
+
+function setHint(text) { hint.textContent = text; }
+function setStage(name) {
+  if (name) { stageEl.textContent = '当前阶段：' + name; stageEl.classList.add('active'); }
+  else { stageEl.textContent = ''; stageEl.classList.remove('active'); }
+}
+function newBubble(kind) {
+  const div = document.createElement('div');
+  div.className = 'bubble ' + kind;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+  return div;
+}
+
+function handleEvent(e) {
+  switch (e.type) {
+    case 'stage_start':
+      state = 'streaming';
+      setStage(e.stage);
+      break;
+    case 'stage_end':
+      break;
+    case 'content':
+      if (state === 'awaiting' || !currentBubble) currentBubble = newBubble('assistant');
+      currentBubble.textContent += e.content;
+      log.scrollTop = log.scrollHeight;
+      break;
+    case 'wait_for_input':
+      state = 'awaiting';
+      currentBubble = null;
+      setHint(e.content || '请输入你的答案');
+      input.focus();
+      break;
+    case 'error':
+      newBubble('error').textContent = '⚠ ' + e.content;
+      break;
+    case 'done':
+      state = 'idle';
+      currentBubble = null;
+      setStage('');
+      setHint('就绪');
+      input.focus();
+      break;
+  }
+}
+
+function connect() {
+  ws = new WebSocket('ws://' + location.host + '/chat');
+  ws.onopen = () => setHint('已连接');
+  ws.onclose = () => { setHint('已断开，2 秒后重连…'); setTimeout(connect, 2000); };
+  ws.onmessage = (msg) => handleEvent(JSON.parse(msg.data));
+}
+
+function send() {
+  const text = input.value.trim();
+  if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+  if (state === 'idle') {
+    // 开启新轮次：JSON
+    ws.send(JSON.stringify({ message: text, capability: sel.value, session_id: sessionId }));
+    setHint('等待回复…');
+  } else if (state === 'awaiting') {
+    // 反问回复：纯文本
+    ws.send(text);
+    setHint('…');
+  } else {
+    return; // 流式输出中，不允许插话
+  }
+  newBubble('user').textContent = text;
+  input.value = '';
+}
+
+input.addEventListener('keydown', (e) => { if (e.key === 'Enter') send(); });
+sendBtn.addEventListener('click', send);
+connect();
+</script>
+</body>
+</html>
