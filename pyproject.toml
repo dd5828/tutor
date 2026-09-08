@@ -11,7 +11,8 @@ build-backend = "hatchling.build"
 name = "nnnu"
 version = "0.1.0"
 description = "教育垂直 AI 辅导产品：agent-native 两层插件架构（参考 DeepTutor 自研）"
-readme = "README.md"
+# readme 字段不设：README.md 按规范不入库（gitignore *.md），
+# hatchling 构建时若声明 readme 则要求文件存在，CI 干净 checkout 会构建失败
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115",
