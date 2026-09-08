@@ -11,6 +11,7 @@ jobs:
     name: ruff + mypy + pytest（Python ${{ matrix.python-version }}）
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version: ["3.11", "3.12"]
     steps:
@@ -25,4 +26,7 @@ jobs:
       - name: 类型检查
         run: mypy src tests
       - name: 单测
-        run: pytest tests/unit -q
+        # 失败时把输出转成 check-run 注解，便于远程排障
+        run: |
+          pytest tests/unit -q -x --tb=short 2>&1 | sed 's/^/::error::/'
+          exit ${PIPESTATUS[0]}
