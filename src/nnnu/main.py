@@ -1,11 +1,14 @@
-"""nnnu 启动入口。
+"""nnnu 启动入口：uvicorn 跑 FastAPI app。"""
 
-Phase 0 Day 5 接线：uvicorn 启动 api.main 的 FastAPI app。
-"""
+from __future__ import annotations
+
+import uvicorn
+
+from nnnu.api.main import app
 
 
 def main() -> None:
-    raise NotImplementedError("Phase 0 Day 5 接入：uvicorn 启动 FastAPI + WebSocket /chat")
+    uvicorn.run(app, host="127.0.0.1", port=8000)
 
 
 if __name__ == "__main__":
