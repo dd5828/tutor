@@ -28,11 +28,26 @@ class LLMClient:
     """
 
     def __init__(self, client: AsyncOpenAI | None = None, *, model: str | None = None) -> None:
-        self._client = client or AsyncOpenAI(
-            api_key=os.environ.get("NNNU_LLM_API_KEY", ""),
-            base_url=os.environ.get("NNNU_LLM_BASE_URL") or DEFAULT_BASE_URL,
-        )
+        # 延迟构造 SDK client：模块 import / 无 key 场景不触发 SDK 校验
+        # （openai 3.x 在构造时即校验凭据，import 时构造会让应用起不来）。
+        self._client = client
         self._model = model or os.environ.get("NNNU_LLM_MODEL") or DEFAULT_MODEL
+
+    def _get_client(self) -> AsyncOpenAI:
+        """首次调用时构造 SDK client；未配置密钥给友好错误而非 SDK 异常。"""
+        if self._client is None:
+            api_key = os.environ.get("NNNU_LLM_API_KEY") or ""
+            if not api_key:
+                raise ChatError(
+                    "未配置 LLM 密钥：请设置环境变量 NNNU_LLM_API_KEY",
+                    retryable=False,
+                    error_code="LLM_NO_KEY",
+                )
+            self._client = AsyncOpenAI(
+                api_key=api_key,
+                base_url=os.environ.get("NNNU_LLM_BASE_URL") or DEFAULT_BASE_URL,
+            )
+        return self._client
 
     async def chat_stream(
         self,
@@ -50,7 +65,7 @@ class LLMClient:
         """
         partial: list[str] = []
         try:
-            stream = await self._client.chat.completions.create(
+            stream = await self._get_client().chat.completions.create(
                 model=model or self._model,
                 messages=cast(Any, messages),
                 stream=True,

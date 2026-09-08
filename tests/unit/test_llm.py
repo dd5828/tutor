@@ -172,3 +172,24 @@ async def test_chat_stream_usage_only_chunk_without_text_does_not_crash() -> Non
 
     assert texts == []
     assert len(received) == 1
+
+
+async def test_chat_stream_without_api_key_raises_friendly_error(monkeypatch: Any) -> None:
+    """无密钥：延迟构造不崩，首次调用给友好 ChatError（非 SDK 异常）。"""
+    monkeypatch.delenv("NNNU_LLM_API_KEY", raising=False)
+    client = LLMClient()
+
+    with pytest.raises(ChatError) as excinfo:
+        await _collect(client.chat_stream([]))
+
+    exc = excinfo.value
+    assert exc.retryable is False
+    assert exc.error_code == "LLM_NO_KEY"
+    assert "NNNU_LLM_API_KEY" in str(exc)
+
+
+def test_client_construction_is_lazy_without_key(monkeypatch: Any) -> None:
+    """无密钥时构造 LLMClient 不触发 SDK 凭据校验（openai 3.x 构造即校验）。"""
+    monkeypatch.delenv("NNNU_LLM_API_KEY", raising=False)
+
+    LLMClient()  # 不抛异常即为通过
