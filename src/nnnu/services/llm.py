@@ -9,12 +9,13 @@ v1 未做：多供应商网关、自动重试、缓存、token 用量计费（Da
 from __future__ import annotations
 
 import os
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from typing import Any, cast
 
 from openai import AsyncOpenAI
 
 from nnnu.core import ChatError
+from nnnu.services.usage import UsageInfo
 
 DEFAULT_BASE_URL = "https://api.deepseek.com"
 DEFAULT_MODEL = "deepseek-chat"
@@ -39,9 +40,11 @@ class LLMClient:
         *,
         model: str | None = None,
         temperature: float = 0.7,
+        on_usage: Callable[[UsageInfo], None] | None = None,
     ) -> AsyncIterator[str]:
         """流式调用 LLM，逐段 yield 文本。
 
+        ``on_usage``：流结束前收到用量块时回调一次（include_usage 开启）。
         调用失败抛 ``ChatError(retryable=True)``，``partial_response`` 为
         出错前已产出的文本（orchestrator 反射进 error 事件，前端可保留显示）。
         """
@@ -52,9 +55,17 @@ class LLMClient:
                 messages=cast(Any, messages),
                 stream=True,
                 temperature=temperature,
+                stream_options={"include_usage": True},
             )
             async for chunk in stream:
-                text = chunk.choices[0].delta.content or ""
+                # 用量尾块：choices 为空、usage 有值（供应商均如此发）
+                usage = getattr(chunk, "usage", None)
+                if usage is not None and on_usage is not None:
+                    on_usage(UsageInfo.from_openai(usage))
+                choices = getattr(chunk, "choices", None) or []
+                if not choices:
+                    continue
+                text = choices[0].delta.content or ""
                 if text:
                     partial.append(text)
                     yield text

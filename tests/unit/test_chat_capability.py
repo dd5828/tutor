@@ -11,12 +11,19 @@ from nnnu.capabilities.chat.capability import ChatCapability
 from nnnu.capabilities.chat.prompts import SYSTEM_PROMPT
 from nnnu.core import ChatError, StreamBus, StreamEvent, StreamEventType, TurnContext
 from nnnu.services.llm import LLMClient
+from nnnu.services.usage import UsageInfo, UsageTracker
 
 
 class StubLLM:
-    def __init__(self, chunks: list[str], error: Exception | None = None) -> None:
+    def __init__(
+        self,
+        chunks: list[str],
+        error: Exception | None = None,
+        usage: UsageInfo | None = None,
+    ) -> None:
         self._chunks = chunks
         self._error = error
+        self._usage = usage
         self.calls: list[list[dict[str, str]]] = []
 
     async def chat_stream(
@@ -27,8 +34,19 @@ class StubLLM:
         self.calls.append(messages)
         for chunk in self._chunks:
             yield chunk
+        on_usage = kwargs.get("on_usage")
+        if self._usage is not None and callable(on_usage):
+            on_usage(self._usage)
         if self._error is not None:
             raise self._error
+
+
+class StubTracker:
+    def __init__(self) -> None:
+        self.records: list[dict[str, Any]] = []
+
+    def record(self, **kwargs: Any) -> None:
+        self.records.append(kwargs)
 
 
 def _capability(
@@ -91,3 +109,30 @@ async def test_run_llm_error_propagates_but_stage_pair_closes() -> None:
         StreamEventType.STAGE_END,
     ]
     assert events[1].content == "半句"
+
+
+async def test_run_records_usage_via_on_usage() -> None:
+    stub = StubLLM(["你", "好"], usage=UsageInfo(10, 5, 15))
+    tracker = StubTracker()
+    cap = ChatCapability(llm=cast(LLMClient, stub), usage=cast(UsageTracker, tracker))
+    ctx = TurnContext(session_id="s1", user_message="hi", metadata={"turn_id": "t1"})
+
+    await _collect_run(cap, ctx)
+
+    assert len(tracker.records) == 1
+    record = tracker.records[0]
+    assert record["session_id"] == "s1"
+    assert record["turn_id"] == "t1"
+    assert record["capability"] == "chat"
+    assert record["usage"] == UsageInfo(10, 5, 15)
+    assert record["duration"] >= 0
+
+
+async def test_run_without_usage_tail_does_not_record() -> None:
+    stub = StubLLM(["x"])  # 无 usage 尾块
+    tracker = StubTracker()
+    cap = ChatCapability(llm=cast(LLMClient, stub), usage=cast(UsageTracker, tracker))
+
+    await _collect_run(cap, TurnContext(user_message="hi"))
+
+    assert tracker.records == []
