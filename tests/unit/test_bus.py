@@ -143,7 +143,7 @@ async def test_error_event() -> None:
 
 
 async def test_metadata_extra_overrides_base() -> None:
-    """调用方 metadata 覆盖协议字段，与上游 merge_trace_metadata 同序。"""
+    """调用方 metadata 覆盖协议字段（extra 优先）。"""
     bus = StreamBus()
     await bus.tool_call("t", {"a": 1}, metadata={"args": "override"})
     await bus.close()

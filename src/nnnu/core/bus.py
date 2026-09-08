@@ -1,9 +1,8 @@
-"""StreamBus 流式事件总线（参考 DeepTutor core/stream_bus.py，v1 抄约 70%）。
+"""StreamBus 流式事件总线（v1 精简版）。
 
 能力/工具向总线 emit，消费者（WebSocket 推送）subscribe 读取。
-v1 砍掉：register_bus/unregister_bus/get_bus 按 turn_id 的全局总线表（wait_for_input
-已覆盖反问需求）；thinking/observation/progress 便捷方法；trace.py 元数据合并
-（简化为本地 _merge_metadata）。抄写细节见 docs/upstream-notes.md §2.3。
+v1 未做：按 turn_id 的全局总线表（wait_for_input 已覆盖反问需求）；
+thinking/observation/progress 便捷方法；trace 元数据合并（简化为本地 _merge_metadata）。
 """
 
 from __future__ import annotations
@@ -18,8 +17,7 @@ from .events import StreamEvent, StreamEventType
 
 
 def _merge_metadata(base: dict[str, Any], extra: dict[str, Any] | None) -> dict[str, Any]:
-    """合并事件 metadata：extra（调用方）覆盖 base（协议字段），
-    与上游 merge_trace_metadata 同序。"""
+    """合并事件 metadata：extra（调用方）覆盖 base（协议字段）。"""
     merged = dict(base)
     if extra:
         merged.update(extra)

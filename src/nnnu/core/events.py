@@ -1,8 +1,8 @@
-"""Stream 事件协议（参考 DeepTutor core/stream.py，v1 精简版）。
+"""Stream 事件协议（v1 精简版）。
 
 所有能力/工具通过统一事件格式向消费者（WebSocket 推送、前端渲染）汇报进度。
-v1 自上游 15 种事件保留 10 种：砍掉 thinking / observation / progress /
-session / session_meta（见 docs/upstream-notes.md §2.1）。
+v1 共 10 种事件：stage_start / stage_end / content / tool_call / tool_result /
+sources / result / error / done / wait_for_input。
 """
 
 from __future__ import annotations

@@ -11,6 +11,23 @@
 """
 
 from nnnu.core.bus import StreamBus
+from nnnu.core.capability_protocol import BaseCapability, CapabilityManifest
+from nnnu.core.context import Attachment, TurnContext
+from nnnu.core.errors import ChatError
 from nnnu.core.events import StreamEvent, StreamEventType
+from nnnu.core.tool_protocol import BaseTool, ToolDefinition, ToolParameter, ToolResult
 
-__all__ = ["StreamBus", "StreamEvent", "StreamEventType"]
+__all__ = [
+    "Attachment",
+    "BaseCapability",
+    "BaseTool",
+    "CapabilityManifest",
+    "ChatError",
+    "StreamBus",
+    "StreamEvent",
+    "StreamEventType",
+    "ToolDefinition",
+    "ToolParameter",
+    "ToolResult",
+    "TurnContext",
+]
