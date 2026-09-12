@@ -1,0 +1,32 @@
+{"id": "concept-basic-01", "level": "基础", "question": "无穷小量是不是就是很小的数？", "stuck_point": "我一直把无穷小理解成特别小的常数", "replies": ["是很小的数，比如 0.0001"], "expected": ["引导而非给答案", "错因定位=概念", "变式题"]}
+{"id": "concept-basic-02", "level": "基础", "question": "函数在一点连续的定义是什么？", "stuck_point": "背过定义但说不清", "replies": ["左右极限存在就连续"], "expected": ["引导而非给答案", "错因定位=概念", "变式题"]}
+{"id": "concept-basic-03", "level": "基础", "question": "导数存在和可导是不是一回事？", "stuck_point": "分不清这两个说法", "replies": ["是一回事"], "expected": ["引导而非给答案", "错因定位=概念", "变式题"]}
+{"id": "concept-basic-04", "level": "基础", "question": "y=x^2 是奇函数还是偶函数？", "stuck_point": "忘了怎么判断", "replies": ["奇函数"], "expected": ["引导而非给答案", "错因定位=概念", "变式题"]}
+{"id": "calc-basic-01", "level": "基础", "question": "求 lim(x→0) sinx/x", "stuck_point": "我知道答案是 1 但想听你讲讲怎么来的", "replies": ["答案是 1"], "expected": ["确认题意", "引导而非给答案", "LaTeX格式", "变式题"]}
+{"id": "calc-basic-02", "level": "基础", "question": "求不定积分 ∫ x dx", "stuck_point": "不定积分要不要加 C 我总是忘", "replies": ["x²/2"], "expected": ["确认题意", "引导而非给答案", "变式题"]}
+{"id": "calc-basic-03", "level": "基础", "question": "求 y=x^3 的导数", "stuck_point": "幂函数求导公式记混了", "replies": ["2x²"], "expected": ["引导而非给答案", "错因定位=公式", "LaTeX格式", "变式题"]}
+{"id": "calc-basic-04", "level": "基础", "question": "求 lim(x→∞) 1/x", "stuck_point": "无穷大除无穷大不确定", "replies": ["结果是 0"], "expected": ["引导而非给答案", "变式题"]}
+{"id": "proof-basic-01", "level": "基础", "question": "用极限定义证明 lim(x→2) (3x+1) = 7", "stuck_point": "定义里 ε 和 δ 不会取", "replies": ["不会写"], "expected": ["引导而非给答案", "讲解四段", "LaTeX格式", "变式题"]}
+{"id": "proof-basic-02", "level": "基础", "question": "证明 sin x 是以 2π 为周期的周期函数", "stuck_point": "只会画图看", "replies": ["画图能看出来，但证明不会写"], "expected": ["引导而非给答案", "讲解四段", "变式题"]}
+{"id": "concept-mid-01", "level": "常规", "question": "可导一定连续吗？反过来呢？", "stuck_point": "经常把这两个搞混", "replies": ["可导不一定连续"], "expected": ["引导而非给答案", "错因定位=概念", "变式题"]}
+{"id": "concept-mid-02", "level": "常规", "question": "洛必达法则的使用条件有哪些？", "stuck_point": "做题时不知道该不该用", "replies": ["只要 0/0 型就能用"], "expected": ["引导而非给答案", "错因定位=概念", "LaTeX格式", "变式题"]}
+{"id": "concept-mid-03", "level": "常规", "question": "无穷小量阶的比较是什么意思？等价无穷小怎么用？", "stuck_point": "等价替换经常用错", "replies": ["求极限时高阶无穷小直接删掉"], "expected": ["引导而非给答案", "错因定位=概念", "变式题"]}
+{"id": "concept-mid-04", "level": "常规", "question": "驻点和极值点是什么关系？", "stuck_point": "驻点极值点分不清", "replies": ["驻点一定是极值点"], "expected": ["引导而非给答案", "错因定位=概念", "变式题"]}
+{"id": "calc-mid-01", "level": "常规", "question": "求 lim(x→0) (tanx - x)/x³", "stuck_point": "洛必达用了两次算出来是 0，感觉不对", "replies": ["两次洛必达后得 0"], "expected": ["引导而非给答案", "错因定位=方法", "LaTeX格式", "变式题"]}
+{"id": "calc-mid-02", "level": "常规", "question": "求 ∫ x·sinx dx", "stuck_point": "分部积分 u 和 v 取反了", "replies": ["u 取 sinx，v 取 x"], "expected": ["引导而非给答案", "错因定位=方法", "变式题"]}
+{"id": "calc-mid-03", "level": "常规", "question": "求 y=x^x 的导数", "stuck_point": "指数和底都有 x，不知道按哪个公式", "replies": ["x·x^(x-1)"], "expected": ["引导而非给答案", "错因定位=方法", "LaTeX格式", "变式题"]}
+{"id": "calc-mid-04", "level": "常规", "question": "求 lim(x→∞) (1+1/x)^x", "stuck_point": "知道是重要极限但想弄清推导", "replies": ["答案是 e"], "expected": ["确认题意", "引导而非给答案", "LaTeX格式", "变式题"]}
+{"id": "calc-mid-05", "level": "常规", "question": "求 y=x² 绕 x 轴旋转一周（x 从 0 到 1）的旋转体体积", "stuck_point": "体积公式忘了", "replies": ["π∫x²dx 从0到1 = π/3"], "expected": ["引导而非给答案", "错因定位=公式", "LaTeX格式", "变式题"]}
+{"id": "proof-mid-01", "level": "常规", "question": "用单调有界准则证明数列 (1+1/n)^n 收敛", "stuck_point": "知道要证单调和上有界，但都证不出来", "replies": ["不会证"], "expected": ["引导而非给答案", "讲解四段", "LaTeX格式", "变式题"]}
+{"id": "proof-mid-02", "level": "常规", "question": "用拉格朗日中值定理证明 |sin a - sin b| ≤ |a - b|", "stuck_point": "不知道中值定理怎么套进去", "replies": ["不会用"], "expected": ["引导而非给答案", "讲解四段", "LaTeX格式", "变式题"]}
+{"id": "concept-adv-01", "level": "提高", "question": "一致连续和连续的区别是什么？", "stuck_point": "概念题总是做不对", "replies": ["不都是连续吗，应该一样"], "expected": ["引导而非给答案", "错因定位=概念", "讲解四段", "变式题"]}
+{"id": "concept-adv-02", "level": "提高", "question": "为什么洛必达法则对 ∞/∞ 型也成立？", "stuck_point": "背下来了但不知道原理", "replies": ["不会证明"], "expected": ["引导而非给答案", "讲解四段", "变式题"]}
+{"id": "calc-adv-01", "level": "提高", "question": "求 lim(x→0) (e^x - 1 - x)/x²", "stuck_point": "分子用等价无穷小替换直接约掉了", "replies": ["e^x-1 换成 x，分子变 0"], "expected": ["引导而非给答案", "错因定位=概念", "LaTeX格式", "变式题"]}
+{"id": "calc-adv-02", "level": "提高", "question": "求 ∫ x·e^(x²) dx", "stuck_point": "完全没思路", "replies": ["不会", "还是不会"], "expected": ["引导而非给答案", "降级阶梯", "讲解四段", "变式题"]}
+{"id": "calc-adv-03", "level": "提高", "question": "求幂级数 ∑(n=1..∞) n·x^n 的和函数", "stuck_point": "先求导再积分算出来不对", "replies": ["我先求导再积分，结果带回 x=0 对不上"], "expected": ["引导而非给答案", "错因定位=计算", "LaTeX格式", "变式题"]}
+{"id": "proof-adv-01", "level": "提高", "question": "f 在 [0,1] 上连续且 f(0)=f(1)，证明存在 ξ∈[0,1/2] 使 f(ξ)=f(ξ+1/2)", "stuck_point": "完全没思路", "replies": ["不会", "还是不会"], "expected": ["引导而非给答案", "降级阶梯", "讲解四段", "变式题"]}
+{"id": "proof-adv-02", "level": "提高", "question": "用泰勒公式证明 x>0 时 e^x > 1+x", "stuck_point": "展开到一次项就停了", "replies": ["展开到一次项，后面不知道怎么办"], "expected": ["引导而非给答案", "错因定位=方法", "讲解四段", "变式题"]}
+{"id": "proof-adv-03", "level": "提高", "question": "设 f 在 [a,b] 连续、(a,b) 可导，证明存在 ξ 使 f(b)-f(a)=f'(ξ)(b-a)", "stuck_point": "知道要构造辅助函数但不会构造", "replies": ["不知道构造什么函数"], "expected": ["引导而非给答案", "降级阶梯", "讲解四段", "变式题"]}
+{"id": "proof-adv-04", "level": "提高", "question": "证明 x→0 时 sin(1/x) 极限不存在", "stuck_point": "不知道否定极限存在怎么写", "replies": ["不会"], "expected": ["引导而非给答案", "讲解四段", "变式题"]}
+{"id": "proof-adv-05", "level": "提高", "question": "证明闭区间上的连续函数一致连续", "stuck_point": "背过结论但不会证", "replies": ["不会"], "expected": ["引导而非给答案", "降级阶梯", "讲解四段", "变式题"]}
+{"id": "proof-adv-06", "level": "提高", "question": "用夹逼准则证明 lim(n→∞) n^(1/n) = 1", "stuck_point": "不会放缩", "replies": ["不会放缩"], "expected": ["引导而非给答案", "降级阶梯", "讲解四段", "LaTeX格式", "变式题"]}
