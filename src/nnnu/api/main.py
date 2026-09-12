@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from nnnu.api.chat_ws import router
 from nnnu.capabilities.chat.capability import ChatCapability
 from nnnu.capabilities.echo.capability import EchoCapability
+from nnnu.capabilities.math.capability import MathTutorCapability
 from nnnu.capabilities.quiz.capability import QuizCapability
 from nnnu.runtime.registry import get_capability_registry
 
@@ -25,6 +26,7 @@ def create_app() -> FastAPI:
     registry.register(ChatCapability())
     registry.register(EchoCapability())
     registry.register(QuizCapability())
+    registry.register(MathTutorCapability())
 
     app = FastAPI(title="nnnu", version="0.1.0")
     app.include_router(router)

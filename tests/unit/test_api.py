@@ -8,6 +8,7 @@ from typing import Any, cast
 from fastapi.testclient import TestClient
 
 from nnnu.api.main import create_app
+from nnnu.runtime.registry import get_capability_registry
 
 
 def _recv(ws: Any) -> dict[str, Any]:
@@ -91,3 +92,11 @@ def test_index_html_served_at_root() -> None:
     assert resp.status_code == 200
     assert "text/html" in resp.headers["content-type"]
     assert "nnnu 辅导 Demo" in resp.text
+
+
+def test_create_app_registers_math_capability() -> None:
+    registry = get_capability_registry()
+    capability = registry.get("math")
+
+    assert capability is not None
+    assert capability.manifest.stages == ["诊断", "引导", "讲解", "巩固"]
