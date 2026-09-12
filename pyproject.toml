@@ -57,6 +57,9 @@ strict = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-pythonpath = ["src"]
+# "." 是仓库根：test_evals.py 里 `from tests.evals.run_evals import ...`
+# 依赖 tests 包可导入。python -m pytest 自带 cwd 到 sys.path，但 CI 用
+# pytest 控制台脚本不会——两种跑法都要绿。
+pythonpath = ["src", "."]
 # 覆盖率目标：core 层 >90%（路线图 Phase 0 验收）。CI 中运行：
 #   pytest --cov=nnnu --cov-report=term-missing
