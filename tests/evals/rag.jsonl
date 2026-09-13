@@ -1,0 +1,50 @@
+{"id": "rag-001", "query": "数列极限的 ε-N 定义讲的是什么意思？", "expected_doc": "01-函数极限连续", "expected_section": "极限的概念"}
+{"id": "rag-002", "query": "两个重要极限分别是什么？", "expected_doc": "01-函数极限连续"}
+{"id": "rag-003", "query": "闭区间上的连续函数有哪些重要性质？", "expected_doc": "01-函数极限连续", "expected_section": "连续与间断"}
+{"id": "rag-004", "query": "判断间断点的类型时左右极限怎么用？", "expected_doc": "01-函数极限连续"}
+{"id": "rag-005", "query": "使用极限四则运算法则之前要先检查什么？", "expected_doc": "01-函数极限连续", "expected_section": "极限的性质与运算法则"}
+{"id": "rag-006", "query": "什么叫等价无穷小？", "expected_doc": "02-无穷小与夹逼准则", "expected_section": "无穷小的比较"}
+{"id": "rag-007", "query": "常用的等价无穷小公式有哪些？", "expected_doc": "02-无穷小与夹逼准则"}
+{"id": "rag-008", "query": "等价无穷小替换时最容易犯什么错误？", "expected_doc": "02-无穷小与夹逼准则", "expected_section": "无穷小的比较"}
+{"id": "rag-009", "query": "求 n 项和的极限时夹逼准则怎么用？", "expected_doc": "02-无穷小与夹逼准则", "expected_section": "夹逼准则"}
+{"id": "rag-010", "query": "单调有界准则的适用场景是什么？", "expected_doc": "02-无穷小与夹逼准则"}
+{"id": "rag-011", "query": "洛必达法则的使用条件有哪些？", "expected_doc": "03-洛必达法则", "expected_section": "法则内容与适用条件"}
+{"id": "rag-012", "query": "0 乘无穷型未定式怎么用洛必达法则处理？", "expected_doc": "03-洛必达法则"}
+{"id": "rag-013", "query": "洛必达法则失效的情形有哪些？", "expected_doc": "03-洛必达法则", "expected_section": "失效情形"}
+{"id": "rag-014", "query": "数列极限能直接使用洛必达法则吗？", "expected_doc": "03-洛必达法则"}
+{"id": "rag-015", "query": "使用洛必达法则之前做什么能简化计算？", "expected_doc": "03-洛必达法则", "expected_section": "使用技巧"}
+{"id": "rag-016", "query": "函数在一点可导的定义是什么？", "expected_doc": "04-导数与微分", "expected_section": "导数的概念"}
+{"id": "rag-017", "query": "可导与连续是什么关系？", "expected_doc": "04-导数与微分"}
+{"id": "rag-018", "query": "复合函数求导的链式法则怎么用？", "expected_doc": "04-导数与微分", "expected_section": "求导法则"}
+{"id": "rag-019", "query": "隐函数怎么求导？", "expected_doc": "04-导数与微分"}
+{"id": "rag-020", "query": "参数方程确定的函数的二阶导数公式是什么？", "expected_doc": "04-导数与微分", "expected_section": "高阶导数与微分"}
+{"id": "rag-021", "query": "罗尔定理需要满足哪三个条件？", "expected_doc": "05-微分中值定理", "expected_section": "费马引理与罗尔定理"}
+{"id": "rag-022", "query": "拉格朗日中值定理的结论是什么？", "expected_doc": "05-微分中值定理"}
+{"id": "rag-023", "query": "柯西中值定理和拉格朗日定理是什么关系？", "expected_doc": "05-微分中值定理", "expected_section": "柯西中值定理"}
+{"id": "rag-024", "query": "构造辅助函数有什么常用套路？", "expected_doc": "05-微分中值定理", "expected_section": "辅助函数构造"}
+{"id": "rag-025", "query": "有限增量公式能用来做什么？", "expected_doc": "05-微分中值定理"}
+{"id": "rag-026", "query": "泰勒公式的拉格朗日余项和佩亚诺余项有什么区别？", "expected_doc": "06-泰勒公式", "expected_section": "泰勒公式"}
+{"id": "rag-027", "query": "e 的 x 次方的麦克劳林展开式是什么？", "expected_doc": "06-泰勒公式"}
+{"id": "rag-028", "query": "用泰勒展开求极限的展开原则是什么？", "expected_doc": "06-泰勒公式", "expected_section": "展开原则"}
+{"id": "rag-029", "query": "泰勒展开和等价无穷小替换有什么关系？", "expected_doc": "06-泰勒公式"}
+{"id": "rag-030", "query": "怎么用泰勒公式求高阶导数？", "expected_doc": "06-泰勒公式", "expected_section": "泰勒公式的应用"}
+{"id": "rag-031", "query": "什么是原函数？连续函数一定有原函数吗？", "expected_doc": "07-不定积分", "expected_section": "原函数与基本概念"}
+{"id": "rag-032", "query": "第一类换元法凑微分的核心是什么？", "expected_doc": "07-不定积分", "expected_section": "基本积分表与凑微分"}
+{"id": "rag-033", "query": "分部积分时选取 u 的优先顺序是什么？", "expected_doc": "07-不定积分", "expected_section": "换元法与分部积分"}
+{"id": "rag-034", "query": "有理函数积分的基本步骤是什么？", "expected_doc": "07-不定积分", "expected_section": "有理函数积分"}
+{"id": "rag-035", "query": "不定积分结果忘记加任意常数会怎样？", "expected_doc": "07-不定积分"}
+{"id": "rag-036", "query": "定积分的几何意义是什么？", "expected_doc": "08-定积分与变限积分", "expected_section": "定积分的概念与性质"}
+{"id": "rag-037", "query": "变限积分函数求导公式是什么？", "expected_doc": "08-定积分与变限积分", "expected_section": "变限积分函数"}
+{"id": "rag-038", "query": "牛顿-莱布尼茨公式使用前要注意什么？", "expected_doc": "08-定积分与变限积分", "expected_section": "牛顿-莱布尼茨公式"}
+{"id": "rag-039", "query": "对称区间上的定积分有什么化简结论？", "expected_doc": "08-定积分与变限积分"}
+{"id": "rag-040", "query": "华里士公式的结论是什么？", "expected_doc": "08-定积分与变限积分", "expected_section": "定积分的计算技巧"}
+{"id": "rag-041", "query": "反常积分有哪两类？", "expected_doc": "09-反常积分", "expected_section": "两类反常积分"}
+{"id": "rag-042", "query": "p 积分的收敛结论是什么？", "expected_doc": "09-反常积分", "expected_section": "p 积分与收敛判别"}
+{"id": "rag-043", "query": "瑕点位于积分区间内部时怎么处理？", "expected_doc": "09-反常积分"}
+{"id": "rag-044", "query": "比较判别法判断敛散性的思路是什么？", "expected_doc": "09-反常积分", "expected_section": "p 积分与收敛判别"}
+{"id": "rag-045", "query": "反常积分计算中换元时要注意什么？", "expected_doc": "09-反常积分", "expected_section": "计算技巧"}
+{"id": "rag-046", "query": "微分方程的阶和通解怎么理解？", "expected_doc": "10-微分方程", "expected_section": "基本概念"}
+{"id": "rag-047", "query": "一阶线性微分方程的通解公式是什么？", "expected_doc": "10-微分方程", "expected_section": "一阶方程的解法"}
+{"id": "rag-048", "query": "二阶常系数齐次方程的特征根分几种情况？", "expected_doc": "10-微分方程", "expected_section": "二阶常系数线性方程"}
+{"id": "rag-049", "query": "待定系数法求特解时 k 怎么取值？", "expected_doc": "10-微分方程"}
+{"id": "rag-050", "query": "伯努利方程怎么化成一阶线性方程？", "expected_doc": "10-微分方程", "expected_section": "一阶方程的解法"}
