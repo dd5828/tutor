@@ -14,12 +14,16 @@ v1 约定：ctx.user_message 即题目（学生带题来）；AI 出题练走 qu
 W6 起：引导判答经 check_answer 工具（_judge_via_tool）、巩固变式题经
 question_bank 工具（_collect_consolidation_question）——两者在工具缺失时
 都立即短路回退原实现，无工具路径提示词与调用数逐字节不变。
+W7 起：轮首经 read_memory 工具读画像（_load_profile）注入系统提示词与
+诊断点名，轮末经 write_memory 工具写回（_write_memory）——记忆故障一律
+静默降级，无工具/无画像路径提示词与调用数逐字节不变。
 """
 
 from __future__ import annotations
 
 import time
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any
 
 from nnnu.core import BaseCapability, CapabilityManifest, StreamBus, TurnContext
@@ -32,10 +36,12 @@ from .prompts import (
     CONSOLIDATE_BANK_PROMPT,
     CONSOLIDATE_PROMPT,
     DIAGNOSE_PROMPT,
+    DIAGNOSE_WITH_PROFILE,
     EXPLAIN_INSTRUCTION_SOLVED,
     EXPLAIN_INSTRUCTION_STUCK,
     EXPLAIN_PROMPT,
     HINT_PROMPT,
+    PROFILE_PROMPT,
     REFERENCES_PROMPT,
     SYSTEM_PROMPT,
     TOPIC_JSON_PROMPT,
@@ -94,29 +100,109 @@ async def _extract_topic(
     return topic if topic in TOPICS else None
 
 
-async def _collect_consolidation_question(
+@dataclass(frozen=True)
+class MemorySnapshot:
+    """轮首 read_memory 取回的画像视图（能力层只消费字符串协议面）。"""
+
+    summary: str = ""
+    last_topic: str = ""
+    last_stuck: str = ""
+
+
+async def _load_profile(
+    tools: ToolRegistry | None, session_id: str
+) -> MemorySnapshot | None:
+    """轮首读画像；无工具/空 session_id/读取失败/摘要为空 → None。
+
+    返回 None 即"无画像路径"：系统提示词与诊断模板逐字节不变。
+    """
+    if tools is None or not session_id:
+        return None
+    tool = tools.get("read_memory")
+    if tool is None:
+        return None
+    try:
+        result = await tool.execute(session_id=session_id)
+    except Exception:
+        return None
+    if not result.success:
+        return None
+    summary = str(result.metadata.get("summary", "")).strip()
+    if not summary:
+        return None
+    return MemorySnapshot(
+        summary=summary,
+        last_topic=str(result.metadata.get("last_topic", "")),
+        last_stuck=str(result.metadata.get("last_stuck", "")),
+    )
+
+
+async def _write_memory(
+    tools: ToolRegistry | None,
+    *,
+    session_id: str,
+    question: str,
+    level: str,
+    topic: str | None,
+    error_layer: str,
+    solved: bool,
+    stuck_point: str,
+) -> None:
+    """轮末写画像；无工具/空 session_id/写失败一律静默（记忆故障不打断教学）。"""
+    if tools is None or not session_id:
+        return
+    tool = tools.get("write_memory")
+    if tool is None:
+        return
+    try:
+        await tool.execute(
+            session_id=session_id,
+            question=question,
+            level=level,
+            topic=topic or "",
+            error_layer=error_layer,
+            solved=solved,
+            stuck_point=stuck_point,
+        )
+    except Exception:
+        return
+
+
+async def _ensure_topic(
     tools: ToolRegistry | None,
     llm: LLMClient,
     *,
     question: str,
-    level: str,
     on_usage: Callable[[UsageInfo], None] | None = None,
+) -> str | None:
+    """每轮至多一次话题提取；question_bank 工具不存在时绝不发起 LLM 调用。
+
+    提取结果由调用方缓存进 ctx.metadata["topic"]，巩固查库与轮末写回共用
+    （硬守卫：memory 工具的存在不会导致新增提取调用）。
+    """
+    if tools is None or tools.get("question_bank") is None:
+        return None
+    return await _extract_topic(llm, question=question, on_usage=on_usage)
+
+
+async def _collect_consolidation_question(
+    tools: ToolRegistry | None,
+    *,
+    level: str,
+    topic: str | None,
 ) -> tuple[str, dict[str, Any] | None]:
     """查 question_bank 取巩固变式题，返回 (变式题文本, bank item)。
 
-    无工具/无 question_bank 工具/提取失败/查库未命中/工具异常 → ("", None)，
-    调用方走既有 CONSOLIDATE_PROMPT 路径（提示词逐字节不变）。
-    硬约束：**工具不存在时绝不发起提取 LLM 调用**（无工具路径零新增调用）。
+    topic 由调用方（_ensure_topic 缓存）决定；无工具/无 question_bank
+    工具/topic 为空/查库未命中/工具异常 → ("", None)，调用方走既有
+    CONSOLIDATE_PROMPT 路径（提示词逐字节不变）。本函数不发起 LLM 调用。
     """
-    if tools is None:
+    if tools is None or topic is None:
         return "", None
     tool = tools.get("question_bank")
     if tool is None:
         return "", None
     try:
-        topic = await _extract_topic(llm, question=question, on_usage=on_usage)
-        if topic is None:
-            return "", None
         result = await tool.execute(topic=topic, level=level)
     except Exception:
         return "", None
@@ -200,7 +286,7 @@ class MathTutorCapability(BaseCapability):
         name="math",
         description="考研数学（高等数学）陪练：诊断卡点→逐步引导→讲解→变式巩固",
         stages=["诊断", "引导", "讲解", "巩固"],
-        tools_used=["rag", "check_answer", "question_bank"],
+        tools_used=["rag", "check_answer", "question_bank", "read_memory", "write_memory"],
     )
 
     def __init__(
@@ -220,11 +306,20 @@ class MathTutorCapability(BaseCapability):
         user_prompt: str,
         bus: StreamBus,
         *,
+        profile_summary: str = "",
         on_usage: Callable[[UsageInfo], None] | None = None,
     ) -> str:
-        """带系统提示词的流式调用：逐段转发到总线，返回完整文本（判答要用）。"""
+        """带系统提示词的流式调用：逐段转发到总线，返回完整文本（判答要用）。
+
+        profile_summary 非空时把画像摘要拼接进系统提示词；为空时组装与
+        无画像路径逐字节一致。判答/估档位/话题提取走 pedagogy 结构化
+        调用（单 user 消息），不受画像注入影响。
+        """
+        system = SYSTEM_PROMPT
+        if profile_summary:
+            system = f"{SYSTEM_PROMPT}\n\n{PROFILE_PROMPT.format(summary=profile_summary)}"
         messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": system},
             {"role": "user", "content": user_prompt},
         ]
         chunks: list[str] = []
@@ -237,13 +332,35 @@ class MathTutorCapability(BaseCapability):
         question = ctx.user_message.strip()
         started = time.monotonic()
         usage_acc = _UsageAccumulator()
+        # 轮末写回所需：try 前初始化（异常轮 finally 安全读取，不掩盖原异常）
+        stuck = ""
+        level = pedagogy.DEFAULT_LEVEL
+        error_layer = pedagogy.NO_ERROR_LAYER
+        solved = False
+        topic: str | None = None
 
         try:
+            # ---- 轮首：读画像（失败静默），有画像则注入 ----
+            memory = await _load_profile(self._tools, ctx.session_id)
+            profile_summary_text = memory.summary if memory is not None else ""
+            if profile_summary_text:
+                ctx.student_profile = profile_summary_text
+
             # ---- 诊断：复述题意 + 问卡点 + 估水平档位 ----
             async with bus.stage("诊断", source=self.name):
+                if memory is not None and memory.last_stuck:
+                    diagnose_prompt = DIAGNOSE_WITH_PROFILE.format(
+                        question=question,
+                        last_topic=memory.last_topic or "相关考点",
+                        last_stuck=memory.last_stuck,
+                    )
+                else:
+                    # 无画像/无上次卡点：原模板逐字节不变
+                    diagnose_prompt = DIAGNOSE_PROMPT.format(question=question)
                 await self._stream(
-                    DIAGNOSE_PROMPT.format(question=question),
+                    diagnose_prompt,
                     bus,
+                    profile_summary=profile_summary_text,
                     on_usage=usage_acc.add,
                 )
                 stuck = (
@@ -255,11 +372,9 @@ class MathTutorCapability(BaseCapability):
                 ctx.metadata["level"] = level
 
             # ---- 引导：一步一提示 + 判答，连续失败降级提示粒度 ----
-            error_layer = pedagogy.NO_ERROR_LAYER
             transcript: list[str] = []
             hint_level = 0
             failures = 0
-            solved = False
             async with bus.stage("引导", source=self.name):
                 for _ in range(pedagogy.MAX_GUIDE_ROUNDS):
                     hint = await self._stream(
@@ -273,6 +388,7 @@ class MathTutorCapability(BaseCapability):
                             transcript="\n".join(transcript) or "（第一轮，无历史）",
                         ),
                         bus,
+                        profile_summary=profile_summary_text,
                         on_usage=usage_acc.add,
                     )
                     reply = (
@@ -341,21 +457,31 @@ class MathTutorCapability(BaseCapability):
                     explain_prompt = (
                         f"{explain_prompt}\n\n{REFERENCES_PROMPT.format(references=references)}"
                     )
-                await self._stream(explain_prompt, bus, on_usage=usage_acc.add)
+                await self._stream(
+                    explain_prompt,
+                    bus,
+                    profile_summary=profile_summary_text,
+                    on_usage=usage_acc.add,
+                )
 
             # ---- 巩固：变式题 + 方法总结 ----
             async with bus.stage("巩固", source=self.name):
+                if topic is None:
+                    topic = await _ensure_topic(
+                        self._tools, self._llm, question=question, on_usage=usage_acc.add
+                    )
+                    if topic is not None:
+                        ctx.metadata["topic"] = topic  # 话题缓存：轮末写回共用
                 variant, bank_item = await _collect_consolidation_question(
                     self._tools,
-                    self._llm,
-                    question=question,
                     level=str(ctx.metadata.get("level", pedagogy.DEFAULT_LEVEL)),
-                    on_usage=usage_acc.add,
+                    topic=topic,
                 )
                 if bank_item is None:
                     await self._stream(
                         CONSOLIDATE_PROMPT.format(question=question),
                         bus,
+                        profile_summary=profile_summary_text,
                         on_usage=usage_acc.add,
                     )
                 else:
@@ -364,6 +490,7 @@ class MathTutorCapability(BaseCapability):
                     await self._stream(
                         CONSOLIDATE_BANK_PROMPT.format(question=question),
                         bus,
+                        profile_summary=profile_summary_text,
                         on_usage=usage_acc.add,
                     )
         finally:
@@ -377,3 +504,14 @@ class MathTutorCapability(BaseCapability):
                     usage=final_usage,
                     duration=time.monotonic() - started,
                 )
+            # 轮末写画像（usage 记录之后）：记忆故障静默，异常轮也写（半成品数据 schema 宽容）
+            await _write_memory(
+                self._tools,
+                session_id=ctx.session_id,
+                question=question,
+                level=str(ctx.metadata.get("level", pedagogy.DEFAULT_LEVEL)),
+                topic=topic,
+                error_layer=error_layer,
+                solved=solved,
+                stuck_point=stuck,
+            )

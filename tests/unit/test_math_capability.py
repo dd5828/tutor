@@ -143,7 +143,13 @@ async def test_manifest_fields() -> None:
     manifest = MathTutorCapability.manifest
     assert manifest.name == "math"
     assert manifest.stages == ["诊断", "引导", "讲解", "巩固"]
-    assert manifest.tools_used == ["rag", "check_answer", "question_bank"]
+    assert manifest.tools_used == [
+        "rag",
+        "check_answer",
+        "question_bank",
+        "read_memory",
+        "write_memory",
+    ]
 
 
 async def test_run_full_flow_stage_and_event_sequence() -> None:
@@ -674,3 +680,276 @@ def test_topic_prompt_lists_all_topics() -> None:
     prompt = TOPIC_JSON_PROMPT.format(question="任意题")
     for topic in TOPICS:
         assert topic in prompt
+
+
+# ── 学习记忆接线（W7）────────────────────────────────────────────────
+
+class StubReadMemoryTool:
+    """返回预置画像结果的假 read_memory 工具，并记录 execute 调用。"""
+
+    name = "read_memory"
+
+    def __init__(self, result: ToolResult | None = None, error: Exception | None = None) -> None:
+        self._result = result if result is not None else _empty_memory_result()
+        self._error = error
+        self.calls: list[dict[str, Any]] = []
+
+    async def execute(self, **kwargs: Any) -> ToolResult:
+        self.calls.append(kwargs)
+        if self._error is not None:
+            raise self._error
+        return self._result
+
+
+class StubWriteMemoryTool:
+    """记录写回参数的假 write_memory 工具。"""
+
+    name = "write_memory"
+
+    def __init__(self, error: Exception | None = None) -> None:
+        self._error = error
+        self.calls: list[dict[str, Any]] = []
+
+    async def execute(self, **kwargs: Any) -> ToolResult:
+        self.calls.append(kwargs)
+        if self._error is not None:
+            raise self._error
+        return ToolResult(
+            content="画像已更新", success=True, metadata={"turn_count": 1, "summary": ""}
+        )
+
+
+def _empty_memory_result() -> ToolResult:
+    return ToolResult(
+        content="暂无历史画像",
+        success=True,
+        metadata={
+            "exists": False,
+            "corrupt": False,
+            "summary": "",
+            "last_topic": "",
+            "last_stuck": "",
+            "last_level": "",
+            "turn_count": 0,
+        },
+    )
+
+
+def _memory_read_result(
+    summary: str = "", last_topic: str = "", last_stuck: str = ""
+) -> ToolResult:
+    return ToolResult(
+        content=summary or "暂无历史画像",
+        success=True,
+        metadata={
+            "exists": bool(summary),
+            "corrupt": False,
+            "summary": summary,
+            "last_topic": last_topic,
+            "last_stuck": last_stuck,
+            "last_level": "常规",
+            "turn_count": 1,
+        },
+    )
+
+
+async def test_profile_summary_injected_into_system_prompt() -> None:
+    from nnnu.capabilities.math.prompts import PROFILE_PROMPT
+
+    read_stub = StubReadMemoryTool(_memory_read_result(summary="该学生已练习 1 轮。"))
+    cap, llm, _ = _capability(
+        HAPPY_PATH, tools=_registry_with(cast(BaseTool, read_stub))
+    )
+    ctx = TurnContext(session_id="s1", user_message="题")
+    _, error = await _drive(cap, ctx, ["卡", "对", "对"])
+
+    assert error is None
+    assert len(llm.calls) == 8  # 画像注入不新增 LLM 调用
+    assert ctx.student_profile == "该学生已练习 1 轮。"
+    # 生成调用（0/2/4/6/7）：系统提示词 = SYSTEM_PROMPT + 画像段
+    expected_system = SYSTEM_PROMPT + "\n\n" + PROFILE_PROMPT.format(summary="该学生已练习 1 轮。")
+    for idx in (0, 2, 4, 6, 7):
+        assert llm.calls[idx]["messages"][0] == {"role": "system", "content": expected_system}
+    # 结构化调用（估档位 1/判答 3/5）：单 user 消息，无系统提示词（边界断言）
+    for idx in (1, 3, 5):
+        assert len(llm.calls[idx]["messages"]) == 1
+        assert llm.calls[idx]["messages"][0]["role"] == "user"
+    # 读画像带上了 session_id
+    assert read_stub.calls == [{"session_id": "s1"}]
+
+
+async def test_diagnose_points_out_last_stuck() -> None:
+    from nnnu.capabilities.math.prompts import DIAGNOSE_WITH_PROFILE
+
+    read_stub = StubReadMemoryTool(
+        _memory_read_result(
+            summary="该学生已练习 1 轮。", last_topic="微分中值定理", last_stuck="辅助函数构造"
+        )
+    )
+    cap, llm, _ = _capability(
+        HAPPY_PATH, tools=_registry_with(cast(BaseTool, read_stub))
+    )
+    _, error = await _drive(
+        cap, TurnContext(session_id="s1", user_message="罗尔证明题"), ["卡", "对", "对"]
+    )
+    assert error is None
+    expected = DIAGNOSE_WITH_PROFILE.format(
+        question="罗尔证明题", last_topic="微分中值定理", last_stuck="辅助函数构造"
+    )
+    assert llm.calls[0]["messages"][1] == {"role": "user", "content": expected}
+    assert "上次" in expected
+
+
+async def test_diagnose_original_when_summary_but_no_last_stuck() -> None:
+    from nnnu.capabilities.math.prompts import DIAGNOSE_PROMPT
+
+    read_stub = StubReadMemoryTool(_memory_read_result(summary="该学生已练习 1 轮。"))
+    cap, llm, _ = _capability(
+        HAPPY_PATH, tools=_registry_with(cast(BaseTool, read_stub))
+    )
+    _, error = await _drive(
+        cap, TurnContext(session_id="s1", user_message="题"), ["卡", "对", "对"]
+    )
+    assert error is None
+    # 有画像摘要但无上次卡点：诊断模板逐字节不变
+    assert llm.calls[0]["messages"][1] == {
+        "role": "user",
+        "content": DIAGNOSE_PROMPT.format(question="题"),
+    }
+
+
+async def test_empty_registry_keeps_system_and_diagnose_byte_identical() -> None:
+    from nnnu.capabilities.math.prompts import DIAGNOSE_PROMPT
+
+    cap, llm, _ = _capability(HAPPY_PATH, tools=ToolRegistry())
+    _, error = await _drive(cap, TurnContext(user_message="题"), ["卡", "对", "对"])
+    assert error is None
+    # 双保险：空注册表路径系统提示词与诊断模板与改造前逐字节一致
+    assert llm.calls[0]["messages"] == [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": DIAGNOSE_PROMPT.format(question="题")},
+    ]
+
+
+async def test_read_memory_failure_silently_skips() -> None:
+    read_stub = StubReadMemoryTool(error=RuntimeError("存储崩溃"))
+    cap, llm, _ = _capability(
+        HAPPY_PATH, tools=_registry_with(cast(BaseTool, read_stub))
+    )
+    ctx = TurnContext(session_id="s1", user_message="题")
+    _, error = await _drive(cap, ctx, ["卡", "对", "对"])
+    assert error is None  # 读画像失败静默降级
+    assert ctx.student_profile == ""
+    assert len(llm.calls) == 8
+
+
+async def test_read_memory_absent_but_registry_has_others() -> None:
+    cap, llm, _ = _capability(
+        HAPPY_PATH, tools=_registry_with(cast(BaseTool, StubCheckTool()))
+    )
+    _, error = await _drive(
+        cap, TurnContext(session_id="s1", user_message="题"), ["卡", "对", "对"]
+    )
+    assert error is None
+    assert len(llm.calls) == 8  # 无 read_memory 工具：零画像零新增调用
+
+
+async def test_write_memory_called_with_turn_data() -> None:
+    write_stub = StubWriteMemoryTool()
+    cap, _, _ = _capability(
+        HAPPY_PATH, tools=_registry_with(cast(BaseTool, write_stub))
+    )
+    _, error = await _drive(
+        cap,
+        TurnContext(session_id="s1", user_message="求极限题"),
+        ["卡在第一步", "是 0/0 型吧", "用洛必达"],
+    )
+    assert error is None
+    assert len(write_stub.calls) == 1
+    kwargs = write_stub.calls[0]
+    assert kwargs["session_id"] == "s1"
+    assert kwargs["question"] == "求极限题"
+    assert kwargs["level"] == "常规"  # HAPPY_PATH 估档位
+    assert kwargs["error_layer"] == ""
+    assert kwargs["solved"] is True
+    assert kwargs["stuck_point"] == "卡在第一步"
+    assert kwargs["topic"] == ""  # 无 question_bank 工具：不提取话题
+
+
+async def test_write_memory_not_called_with_empty_session_id() -> None:
+    write_stub = StubWriteMemoryTool()
+    cap, _, _ = _capability(
+        HAPPY_PATH, tools=_registry_with(cast(BaseTool, write_stub))
+    )
+    _, error = await _drive(cap, TurnContext(user_message="题"), ["卡", "对", "对"])
+    assert error is None
+    assert write_stub.calls == []  # 空 session_id：不写画像
+
+
+async def test_write_memory_tool_exception_silently_ignored() -> None:
+    write_stub = StubWriteMemoryTool(error=RuntimeError("磁盘满了"))
+    cap, _, _ = _capability(
+        HAPPY_PATH, tools=_registry_with(cast(BaseTool, write_stub))
+    )
+    _, error = await _drive(
+        cap, TurnContext(session_id="s1", user_message="题"), ["卡", "对", "对"]
+    )
+    assert error is None  # 写回异常静默，不打断教学
+
+
+async def test_write_memory_on_llm_error_turn() -> None:
+    write_stub = StubWriteMemoryTool()
+    cap, _, _ = _capability(
+        [
+            ScriptedResponse(["题意为…"], UsageInfo(1, 2, 3)),
+            ScriptedResponse([], error=ChatError("模型超时")),
+        ],
+        tools=_registry_with(cast(BaseTool, write_stub)),
+    )
+    _, error = await _drive(
+        cap, TurnContext(session_id="s1", user_message="题"), ["卡住"]
+    )
+    assert isinstance(error, ChatError)
+    # 异常轮 finally 仍写一次（半成品数据）
+    assert len(write_stub.calls) == 1
+    assert write_stub.calls[0]["solved"] is False
+    assert write_stub.calls[0]["error_layer"] == ""
+    assert write_stub.calls[0]["stuck_point"] == "卡住"
+
+
+async def test_topic_extracted_once_and_cached_for_write_back() -> None:
+    bank_tool = StubBankTool(_bank_hit_result())
+    write_stub = StubWriteMemoryTool()
+    responses = list(HAPPY_PATH)
+    responses[7] = ScriptedResponse(['{"topic": "微分中值定理"}'])
+    responses.append(ScriptedResponse(["一句话总结。"]))
+    cap, llm, _ = _capability(
+        responses, tools=_registry_with(cast(BaseTool, bank_tool), cast(BaseTool, write_stub))
+    )
+    ctx = TurnContext(session_id="s1", user_message="罗尔型证明题")
+    _, error = await _drive(cap, ctx, ["卡", "对", "对"])
+
+    assert error is None
+    assert len(llm.calls) == 9  # 提取一次：不因 memory 工具存在而重复
+    assert bank_tool.calls == [{"topic": "微分中值定理", "level": "常规"}]
+    # 话题缓存进 metadata，写回共用同一结果
+    assert ctx.metadata["topic"] == "微分中值定理"
+    assert write_stub.calls[0]["topic"] == "微分中值定理"
+
+
+async def test_no_bank_tool_no_topic_extraction_even_with_memory() -> None:
+    """硬守卫：只注册 memory 工具时绝不新增话题提取调用（calls==8）。"""
+    read_stub = StubReadMemoryTool()
+    write_stub = StubWriteMemoryTool()
+    cap, llm, _ = _capability(
+        HAPPY_PATH,
+        tools=_registry_with(
+            cast(BaseTool, read_stub), cast(BaseTool, write_stub)
+        ),
+    )
+    _, error = await _drive(
+        cap, TurnContext(session_id="s1", user_message="题"), ["卡", "对", "对"]
+    )
+    assert error is None
+    assert len(llm.calls) == 8
+    assert write_stub.calls[0]["topic"] == ""

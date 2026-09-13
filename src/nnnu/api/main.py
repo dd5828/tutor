@@ -19,6 +19,7 @@ from nnnu.capabilities.quiz.capability import QuizCapability
 from nnnu.runtime.registry import get_capability_registry, get_tool_registry
 from nnnu.tools.bank.question_bank import QuestionBankTool
 from nnnu.tools.check_answer import CheckAnswerTool
+from nnnu.tools.memory_tools import ReadMemoryTool, WriteMemoryTool
 from nnnu.tools.rag_tool import RagTool
 
 # 仓库根目录下的 web/（src/nnnu/api/main.py → 上溯 3 层）
@@ -30,6 +31,8 @@ def create_app() -> FastAPI:
     get_tool_registry().register(RagTool())
     get_tool_registry().register(QuestionBankTool())
     get_tool_registry().register(CheckAnswerTool())
+    get_tool_registry().register(ReadMemoryTool())
+    get_tool_registry().register(WriteMemoryTool())
     registry = get_capability_registry()
     registry.register(ChatCapability())
     registry.register(EchoCapability())
