@@ -9,6 +9,8 @@
 
 from __future__ import annotations
 
+from .topics import TOPICS
+
 SYSTEM_PROMPT = (
     "你是一位考研数学（高等数学）辅导老师，面向考研备考学生。\n"
     "教学原则：\n"
@@ -102,4 +104,17 @@ REFERENCES_PROMPT = (
     "{references}\n\n"
     "讲解时可以引用这些内容佐证概念、定理与公式；"
     "保持原有四段结构与输出格式约束不变，不要整段照抄。"
+)
+
+TOPIC_JSON_PROMPT = (
+    "题目：{question}\n\n"
+    "判断这道题考查以下哪个考点（选最接近的一个），只输出 JSON，不要输出其他文字：\n"
+    '{{"topic": "考点名"}}\n'
+    "考点表：\n" + "\n".join(f"- {t}" for t in TOPICS)
+)
+
+CONSOLIDATE_BANK_PROMPT = (
+    "题目：{question}\n\n"
+    "讲解已完成，变式题已由题库给出（不要重复出新题）。现在做一件事：\n"
+    "用一句话总结本题考点与通用方法。"
 )

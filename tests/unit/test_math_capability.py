@@ -143,7 +143,7 @@ async def test_manifest_fields() -> None:
     manifest = MathTutorCapability.manifest
     assert manifest.name == "math"
     assert manifest.stages == ["诊断", "引导", "讲解", "巩固"]
-    assert manifest.tools_used == ["rag"]
+    assert manifest.tools_used == ["rag", "check_answer", "question_bank"]
 
 
 async def test_run_full_flow_stage_and_event_sequence() -> None:
@@ -470,3 +470,207 @@ async def test_explain_rag_exception_silently_skips() -> None:
 async def test_collect_references_no_tool() -> None:
     assert await _collect_references(None, "题") == ("", [])
     assert await _collect_references(ToolRegistry(), "题") == ("", [])
+
+
+# ── question_bank / check_answer 接线（W6）─────────────────────────────
+
+class StubBankTool:
+    """返回预置 ToolResult 的假 question_bank 工具，并记录 execute 调用。"""
+
+    name = "question_bank"
+
+    def __init__(self, result: ToolResult | None = None, error: Exception | None = None) -> None:
+        self._result = result if result is not None else ToolResult(success=False)
+        self._error = error
+        self.calls: list[dict[str, Any]] = []
+
+    async def execute(self, **kwargs: Any) -> ToolResult:
+        self.calls.append(kwargs)
+        if self._error is not None:
+            raise self._error
+        return self._result
+
+
+class StubCheckTool:
+    """返回预置 ToolResult 的假 check_answer 工具（不产生 LLM 调用）。"""
+
+    name = "check_answer"
+
+    def __init__(self, result: ToolResult | None = None) -> None:
+        self._result = result if result is not None else ToolResult(success=False)
+
+    async def execute(self, **kwargs: Any) -> ToolResult:
+        return self._result
+
+
+def _registry_with(*tools: BaseTool) -> ToolRegistry:
+    registry = ToolRegistry()
+    for tool in tools:
+        registry.register(tool)
+    return registry
+
+
+BANK_ITEM = {
+    "id": "qb-05-常规-01",
+    "topic": "微分中值定理",
+    "level": "常规",
+    "question": (
+        "设 $f(x)$ 在 $[0,1]$ 上连续、在 $(0,1)$ 内可导，且 $f(0)=0$，$f(1)=1$。"
+        "证明：存在 $\\xi\\in(0,1)$，使 $f'(\\xi)=2\\xi$。"
+    ),
+    "answer": "构造 $F(x)=f(x)-x^2$，由罗尔定理得证。",
+}
+
+
+def _bank_hit_result() -> ToolResult:
+    return ToolResult(
+        content=BANK_ITEM["question"],
+        metadata={"item": BANK_ITEM, "item_id": BANK_ITEM["id"], "position": 0, "total": 1},
+        success=True,
+    )
+
+
+async def test_consolidate_without_question_bank_no_extraction_call() -> None:
+    """硬守卫：无 question_bank 工具时零新增 LLM 调用（calls==8）。"""
+    cap, llm, _ = _capability(HAPPY_PATH, tools=ToolRegistry())
+    events, error = await _drive(cap, TurnContext(user_message="题"), ["卡", "对", "对"])
+    assert error is None
+    assert len(llm.calls) == 8
+    assert not any(e.type == SOURCES for e in events)
+
+
+async def test_consolidate_bank_hit_streams_bank_question_and_summary_only() -> None:
+    bank_tool = StubBankTool(_bank_hit_result())
+    responses = list(HAPPY_PATH)
+    # 巩固的 LLM 出题调用被替换：第 7 响应改提取、追加总结响应
+    responses[7] = ScriptedResponse(['{"topic": "微分中值定理"}'])
+    responses.append(ScriptedResponse(["一句话总结：辅助函数与罗尔定理。"]))
+    cap, llm, _ = _capability(responses, tools=_registry_with(cast(BaseTool, bank_tool)))
+    events, error = await _drive(cap, TurnContext(user_message="罗尔型证明题"), ["卡", "对", "对"])
+
+    assert error is None
+    # 调用数：诊断/估档位/提示×2/判答×2/讲解/提取/总结 = 9
+    assert len(llm.calls) == 9
+    # 提取调用低温且查询词=题目原文
+    assert llm.calls[7]["temperature"] == 0.0
+    assert "罗尔型证明题" in llm.calls[7]["messages"][0]["content"]
+    # 题库收到 (topic, level)，level 来自诊断估档位（HAPPY_PATH=常规）
+    assert bank_tool.calls == [{"topic": "微分中值定理", "level": "常规"}]
+    # 巩固 stage：题库题直发总线 + 总结调用不含出题指令
+    consolidate = [e for e in events if e.stage == "巩固"]
+    assert any(e.type == CONTENT and e.content.startswith("变式题：") for e in consolidate)
+    assert "不要重复出新题" in llm.calls[8]["messages"][1]["content"]
+    assert "出一道与本题同考点" not in llm.calls[8]["messages"][1]["content"]
+
+
+async def test_consolidate_bank_miss_falls_back_to_llm_variant() -> None:
+    bank_tool = StubBankTool(
+        ToolResult(content="暂未收录", metadata={"item": None}, success=True)
+    )
+    responses = list(HAPPY_PATH)
+    responses[7] = ScriptedResponse(['{"topic": "泰勒公式"}'])
+    responses.append(ScriptedResponse(["变式题与总结（LLM 生成）。"]))
+    cap, llm, _ = _capability(responses, tools=_registry_with(cast(BaseTool, bank_tool)))
+    events, error = await _drive(cap, TurnContext(user_message="题"), ["卡", "对", "对"])
+
+    assert error is None
+    # 提取发生 + 查库 miss → 回退原 CONSOLIDATE_PROMPT：9 次调用
+    assert len(llm.calls) == 9
+    assert "出一道与本题同考点" in llm.calls[8]["messages"][1]["content"]
+    # 未出现题库直发内容
+    assert not any(e.content.startswith("变式题：") for e in events if e.type == CONTENT)
+
+
+async def test_consolidate_topic_extraction_failure_falls_back() -> None:
+    bank_tool = StubBankTool(_bank_hit_result())
+    responses = list(HAPPY_PATH)
+    responses[7] = ScriptedResponse(["这题考点很多，不好说"])  # 非 JSON → 提取失败
+    responses.append(ScriptedResponse(["变式题与总结（LLM 生成）。"]))
+    cap, llm, _ = _capability(responses, tools=_registry_with(cast(BaseTool, bank_tool)))
+    _, error = await _drive(cap, TurnContext(user_message="题"), ["卡", "对", "对"])
+
+    assert error is None
+    assert len(llm.calls) == 9
+    assert bank_tool.calls == []  # 提取失败后不查库
+    assert "出一道与本题同考点" in llm.calls[8]["messages"][1]["content"]
+
+
+async def test_consolidate_bank_tool_exception_falls_back() -> None:
+    bank_tool = StubBankTool(error=RuntimeError("题库崩溃"))
+    responses = list(HAPPY_PATH)
+    responses[7] = ScriptedResponse(['{"topic": "泰勒公式"}'])
+    responses.append(ScriptedResponse(["变式题与总结（LLM 生成）。"]))
+    cap, llm, _ = _capability(responses, tools=_registry_with(cast(BaseTool, bank_tool)))
+    _, error = await _drive(cap, TurnContext(user_message="题"), ["卡", "对", "对"])
+
+    assert error is None  # 工具异常静默回退，不打断教学
+    assert len(llm.calls) == 9
+
+
+async def test_consolidate_bank_tool_absent_but_registry_has_others() -> None:
+    """只注册 check_answer：question_bank 缺失 → 不发起提取（calls==8）。"""
+    responses = list(HAPPY_PATH)
+    cap, llm, _ = _capability(
+        responses, tools=_registry_with(cast(BaseTool, StubCheckTool()))
+    )
+    _, error = await _drive(cap, TurnContext(user_message="题"), ["卡", "对", "对"])
+    assert error is None
+    assert len(llm.calls) == 8
+
+
+async def test_judge_with_check_answer_tool_same_call_count() -> None:
+    """真 CheckAnswerTool 端到端：判答经工具，调用数与温度断言全不变。"""
+    from nnnu.tools.check_answer import CheckAnswerTool
+
+    llm = ScriptedLLM(list(HAPPY_PATH))
+    cap = MathTutorCapability(
+        llm=cast(LLMClient, llm),
+        usage=cast(UsageTracker, StubTracker()),
+        tools=_registry_with(CheckAnswerTool(llm=cast(LLMClient, llm))),
+    )
+    events, error = await _drive(cap, TurnContext(user_message="题"), ["卡", "对", "对"])
+
+    assert error is None
+    assert len(llm.calls) == 8
+    temps = [call["temperature"] for call in llm.calls]
+    assert temps[1] == 0.0 and temps[3] == 0.0 and temps[5] == 0.0
+    assert [e.stage for e in events if e.type == STAGE_START] == [
+        "诊断",
+        "引导",
+        "讲解",
+        "巩固",
+    ]
+
+
+async def test_judge_tool_unparseable_metadata_falls_back_direct() -> None:
+    stub = StubCheckTool(ToolResult(content="{}", metadata={}, success=True))
+    cap, llm, _ = _capability(GIVE_UP_PATH, tools=_registry_with(cast(BaseTool, stub)))
+    events, error = await _drive(cap, TurnContext(user_message="题"), ["卡", "直接讲吧"])
+
+    assert error is None
+    # 工具结果不可解析 → 回退直调判答：GIVE_UP_PATH 6 次调用不变
+    assert len(llm.calls) == 6
+    assert [e.stage for e in events if e.type == STAGE_START] == [
+        "诊断",
+        "引导",
+        "讲解",
+        "巩固",
+    ]
+
+
+async def test_judge_tool_failure_falls_back_direct() -> None:
+    stub = StubCheckTool(ToolResult(content="失败", success=False))
+    cap, llm, _ = _capability(GIVE_UP_PATH, tools=_registry_with(cast(BaseTool, stub)))
+    _, error = await _drive(cap, TurnContext(user_message="题"), ["卡", "直接讲吧"])
+
+    assert error is None
+    assert len(llm.calls) == 6
+
+
+def test_topic_prompt_lists_all_topics() -> None:
+    from nnnu.capabilities.math.prompts import TOPIC_JSON_PROMPT
+    from nnnu.capabilities.math.topics import TOPICS
+
+    prompt = TOPIC_JSON_PROMPT.format(question="任意题")
+    for topic in TOPICS:
+        assert topic in prompt

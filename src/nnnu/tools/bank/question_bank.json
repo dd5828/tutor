@@ -1,0 +1,228 @@
+{
+  "items": [
+    {
+      "id": "qb-01-基础-01",
+      "topic": "函数极限连续",
+      "level": "基础",
+      "question": "求极限 $\\lim_{x\\to 0}\\frac{\\sin 3x}{x}$。",
+      "answer": "$\\frac{\\sin 3x}{x}=3\\cdot\\frac{\\sin 3x}{3x}$，由重要极限得原式 $=3$。"
+    },
+    {
+      "id": "qb-01-基础-02",
+      "topic": "函数极限连续",
+      "level": "基础",
+      "question": "求极限 $\\lim_{x\\to 2}\\frac{x^2-4}{x-2}$。",
+      "answer": "因式分解约去 $x-2$：$\\lim_{x\\to 2}(x+2)=4$。"
+    },
+    {
+      "id": "qb-01-常规-01",
+      "topic": "函数极限连续",
+      "level": "常规",
+      "question": "设 $f(x)=\\frac{e^x-1}{x}$（$x\\neq 0$），$f(0)=a$。若 $f$ 在 $x=0$ 处连续，求 $a$。",
+      "answer": "$a=\\lim_{x\\to 0}\\frac{e^x-1}{x}=1$（等价无穷小 $e^x-1\\sim x$）。"
+    },
+    {
+      "id": "qb-01-提高-01",
+      "topic": "函数极限连续",
+      "level": "提高",
+      "question": "证明方程 $x^3-3x+1=0$ 在 $(0,1)$ 内至少有一个实根。",
+      "answer": "设 $f(x)=x^3-3x+1$ 在 $[0,1]$ 上连续，$f(0)=1>0$，$f(1)=-1<0$，由零点定理，存在 $\\xi\\in(0,1)$ 使 $f(\\xi)=0$。"
+    },
+    {
+      "id": "qb-02-基础-01",
+      "topic": "无穷小与夹逼准则",
+      "level": "基础",
+      "question": "当 $x\\to 0$ 时，$1-\\cos x$ 是 $x$ 的几阶无穷小？",
+      "answer": "二阶：$1-\\cos x\\sim\\frac{x^2}{2}$。"
+    },
+    {
+      "id": "qb-02-常规-01",
+      "topic": "无穷小与夹逼准则",
+      "level": "常规",
+      "question": "求极限 $\\lim_{x\\to 0}\\frac{\\tan x-\\sin x}{x^3}$。",
+      "answer": "原式 $=\\lim\\frac{\\tan x(1-\\cos x)}{x^3}=\\lim\\frac{x\\cdot\\frac{x^2}{2}}{x^3}=\\frac{1}{2}$。"
+    },
+    {
+      "id": "qb-02-提高-01",
+      "topic": "无穷小与夹逼准则",
+      "level": "提高",
+      "question": "求极限 $\\lim_{n\\to\\infty}\\left(\\frac{1}{\\sqrt{n^2+1}}+\\frac{1}{\\sqrt{n^2+2}}+\\cdots+\\frac{1}{\\sqrt{n^2+n}}\\right)$。",
+      "answer": "夹逼：$\\frac{n}{\\sqrt{n^2+n}}\\le$ 和式 $\\le\\frac{n}{\\sqrt{n^2+1}}$，两端极限均为 $1$，故原极限为 $1$。"
+    },
+    {
+      "id": "qb-03-基础-01",
+      "topic": "洛必达法则",
+      "level": "基础",
+      "question": "求极限 $\\lim_{x\\to 1}\\frac{\\ln x}{x-1}$。",
+      "answer": "$\\frac{0}{0}$ 型，洛必达：$\\lim_{x\\to 1}\\frac{1/x}{1}=1$。"
+    },
+    {
+      "id": "qb-03-常规-01",
+      "topic": "洛必达法则",
+      "level": "常规",
+      "question": "求极限 $\\lim_{x\\to 0^+}x\\ln x$。",
+      "answer": "$0\\cdot\\infty$ 型，化为 $\\frac{\\ln x}{1/x}$ 用洛必达：$\\lim\\frac{1/x}{-1/x^2}=\\lim(-x)=0$。"
+    },
+    {
+      "id": "qb-03-提高-01",
+      "topic": "洛必达法则",
+      "level": "提高",
+      "question": "求极限 $\\lim_{x\\to 0}\\left(\\frac{1}{x^2}-\\frac{1}{\\sin^2 x}\\right)$。",
+      "answer": "通分得 $\\frac{\\sin^2 x-x^2}{x^2\\sin^2 x}$，用泰勒展开 $\\sin^2 x=(x-\\frac{x^3}{6}+\\cdots)^2=x^2-\\frac{x^4}{3}+\\cdots$，原式 $=-\\frac{1}{3}$。"
+    },
+    {
+      "id": "qb-04-基础-01",
+      "topic": "导数与微分",
+      "level": "基础",
+      "question": "设 $y=x^2 e^x$，求 $y'$。",
+      "answer": "乘法求导：$y'=2xe^x+x^2e^x=(x^2+2x)e^x$。"
+    },
+    {
+      "id": "qb-04-常规-01",
+      "topic": "导数与微分",
+      "level": "常规",
+      "question": "设 $y=\\ln(x+\\sqrt{1+x^2})$，求 $y'$。",
+      "answer": "复合链式：$y'=\\frac{1+\\frac{x}{\\sqrt{1+x^2}}}{x+\\sqrt{1+x^2}}=\\frac{1}{\\sqrt{1+x^2}}$。"
+    },
+    {
+      "id": "qb-04-提高-01",
+      "topic": "导数与微分",
+      "level": "提高",
+      "question": "设参数方程 $\\begin{cases}x=t-\\sin t\\\\ y=1-\\cos t\\end{cases}$，求 $\\frac{dy}{dx}$ 与 $\\frac{d^2y}{dx^2}$。",
+      "answer": "$\\frac{dy}{dx}=\\frac{\\sin t}{1-\\cos t}$；$\\frac{d^2y}{dx^2}=\\frac{d}{dt}(\\frac{\\sin t}{1-\\cos t})\\big/(1-\\cos t)=-\\frac{1}{(1-\\cos t)^2}$。"
+    },
+    {
+      "id": "qb-05-基础-01",
+      "topic": "微分中值定理",
+      "level": "基础",
+      "question": "验证 $f(x)=x^2-2x$ 在 $[0,2]$ 上满足罗尔定理的条件，并求使 $f'(\\xi)=0$ 的 $\\xi$。",
+      "answer": "$f$ 在 $[0,2]$ 连续、$(0,2)$ 可导，且 $f(0)=f(2)=0$。由 $f'(\\xi)=2\\xi-2=0$ 得 $\\xi=1$。"
+    },
+    {
+      "id": "qb-05-常规-01",
+      "topic": "微分中值定理",
+      "level": "常规",
+      "question": "设 $f$ 在 $[0,1]$ 上连续、在 $(0,1)$ 内可导，且 $f(0)=0$，$f(1)=1$。证明：存在 $\\xi\\in(0,1)$，使 $f'(\\xi)=2\\xi$。",
+      "answer": "构造 $F(x)=f(x)-x^2$，则 $F(0)=F(1)=0$，由罗尔定理存在 $\\xi$ 使 $F'(\\xi)=f'(\\xi)-2\\xi=0$，即 $f'(\\xi)=2\\xi$。"
+    },
+    {
+      "id": "qb-05-常规-02",
+      "topic": "微分中值定理",
+      "level": "常规",
+      "question": "用拉格朗日中值定理证明：当 $x>0$ 时，$\\ln(1+x)<x$。",
+      "answer": "对 $f(t)=\\ln(1+t)$ 在 $[0,x]$ 上用拉格朗日：存在 $\\xi\\in(0,x)$ 使 $\\ln(1+x)=\\frac{x}{1+\\xi}<x$。"
+    },
+    {
+      "id": "qb-05-提高-01",
+      "topic": "微分中值定理",
+      "level": "提高",
+      "question": "设 $f$ 在 $[a,b]$ 上连续、在 $(a,b)$ 内可导，且 $f(a)=f(b)=0$。证明：存在 $\\xi\\in(a,b)$，使 $f'(\\xi)+f(\\xi)=0$。",
+      "answer": "构造 $F(x)=e^x f(x)$，则 $F(a)=F(b)=0$，由罗尔定理存在 $\\xi$ 使 $F'(\\xi)=e^{\\xi}[f'(\\xi)+f(\\xi)]=0$，即 $f'(\\xi)+f(\\xi)=0$。"
+    },
+    {
+      "id": "qb-06-基础-01",
+      "topic": "泰勒公式",
+      "level": "基础",
+      "question": "写出 $\\sin x$ 的三阶麦克劳林展开式（带佩亚诺余项）。",
+      "answer": "$\\sin x=x-\\frac{x^3}{3!}+o(x^3)$。"
+    },
+    {
+      "id": "qb-06-常规-01",
+      "topic": "泰勒公式",
+      "level": "常规",
+      "question": "用泰勒公式求极限 $\\lim_{x\\to 0}\\frac{\\sin x-x}{x^3}$。",
+      "answer": "$\\sin x=x-\\frac{x^3}{6}+o(x^3)$，原式 $=\\lim\\frac{-x^3/6+o(x^3)}{x^3}=-\\frac{1}{6}$。"
+    },
+    {
+      "id": "qb-06-提高-01",
+      "topic": "泰勒公式",
+      "level": "提高",
+      "question": "求极限 $\\lim_{x\\to 0}\\frac{\\cos x-e^{-x^2/2}}{x^4}$。",
+      "answer": "$\\cos x=1-\\frac{x^2}{2}+\\frac{x^4}{24}+o(x^4)$，$e^{-x^2/2}=1-\\frac{x^2}{2}+\\frac{x^4}{8}+o(x^4)$，原式 $=\\frac{1}{24}-\\frac{1}{8}=-\\frac{1}{12}$。"
+    },
+    {
+      "id": "qb-07-基础-01",
+      "topic": "不定积分",
+      "level": "基础",
+      "question": "求不定积分 $\\int x e^{x^2}dx$。",
+      "answer": "凑微分：$\\frac{1}{2}\\int e^{x^2}d(x^2)=\\frac{1}{2}e^{x^2}+C$。"
+    },
+    {
+      "id": "qb-07-常规-01",
+      "topic": "不定积分",
+      "level": "常规",
+      "question": "求不定积分 $\\int x\\ln x\\,dx$。",
+      "answer": "分部积分（$u=\\ln x$）：$\\frac{x^2}{2}\\ln x-\\int\\frac{x}{2}dx=\\frac{x^2}{2}\\ln x-\\frac{x^2}{4}+C$。"
+    },
+    {
+      "id": "qb-07-提高-01",
+      "topic": "不定积分",
+      "level": "提高",
+      "question": "求不定积分 $\\int\\sqrt{a^2-x^2}\\,dx$（$a>0$）。",
+      "answer": "令 $x=a\\sin t$：原式 $=a^2\\int\\cos^2 t\\,dt=\\frac{a^2}{2}\\arcsin\\frac{x}{a}+\\frac{x}{2}\\sqrt{a^2-x^2}+C$。"
+    },
+    {
+      "id": "qb-08-基础-01",
+      "topic": "定积分与变限积分",
+      "level": "基础",
+      "question": "计算定积分 $\\int_0^1 x^2 dx$。",
+      "answer": "$\\frac{x^3}{3}\\Big|_0^1=\\frac{1}{3}$。"
+    },
+    {
+      "id": "qb-08-常规-01",
+      "topic": "定积分与变限积分",
+      "level": "常规",
+      "question": "设 $F(x)=\\int_0^{x^2}\\sin(t^2)\\,dt$，求 $F'(x)$。",
+      "answer": "变限积分求导（上限复合）：$F'(x)=2x\\sin(x^4)$。"
+    },
+    {
+      "id": "qb-08-提高-01",
+      "topic": "定积分与变限积分",
+      "level": "提高",
+      "question": "求极限 $\\lim_{x\\to 0}\\frac{\\int_0^x\\sin(t^2)\\,dt}{x^3}$。",
+      "answer": "洛必达：$\\lim_{x\\to 0}\\frac{\\sin(x^2)}{3x^2}=\\frac{1}{3}$（等价无穷小 $\\sin(x^2)\\sim x^2$）。"
+    },
+    {
+      "id": "qb-09-基础-01",
+      "topic": "反常积分",
+      "level": "基础",
+      "question": "判断反常积分 $\\int_1^{+\\infty}\\frac{1}{x^3}dx$ 的敛散性。",
+      "answer": "$p=3>1$，由 p 积分结论收敛。"
+    },
+    {
+      "id": "qb-09-常规-01",
+      "topic": "反常积分",
+      "level": "常规",
+      "question": "计算反常积分 $\\int_0^{+\\infty}x e^{-x}dx$。",
+      "answer": "分部积分：$[-xe^{-x}]_0^{+\\infty}+\\int_0^{+\\infty}e^{-x}dx=0+1=1$。"
+    },
+    {
+      "id": "qb-09-提高-01",
+      "topic": "反常积分",
+      "level": "提高",
+      "question": "计算反常积分 $\\int_0^1\\ln x\\,dx$（$x=0$ 为瑕点）。",
+      "answer": "分部积分：$[x\\ln x-x]_0^1$，取极限 $\\lim_{x\\to 0^+}x\\ln x=0$，故原式 $=-1$，收敛。"
+    },
+    {
+      "id": "qb-10-基础-01",
+      "topic": "微分方程",
+      "level": "基础",
+      "question": "求微分方程 $y'=y$ 的通解。",
+      "answer": "可分离变量：$\\int\\frac{dy}{y}=\\int dx$，得 $y=Ce^x$。"
+    },
+    {
+      "id": "qb-10-常规-01",
+      "topic": "微分方程",
+      "level": "常规",
+      "question": "求微分方程 $y'+\\frac{y}{x}=x$ 的通解。",
+      "answer": "一阶线性（$P=\\frac{1}{x}$）：$y=e^{-\\ln x}(\\int x\\cdot x\\,dx+C)=\\frac{x^3/3+C}{x}$。"
+    },
+    {
+      "id": "qb-10-提高-01",
+      "topic": "微分方程",
+      "level": "提高",
+      "question": "求 $y''-3y'+2y=0$ 满足 $y(0)=1$，$y'(0)=0$ 的特解。",
+      "answer": "特征方程 $r^2-3r+2=0$ 得 $r=1,2$，通解 $y=C_1e^x+C_2e^{2x}$；代入初值解得 $C_1=2$，$C_2=-1$，特解 $y=2e^x-e^{2x}$。"
+    }
+  ]
+}

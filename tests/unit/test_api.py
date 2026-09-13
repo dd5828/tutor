@@ -111,3 +111,15 @@ def test_create_app_registers_rag_tool() -> None:
     finally:
         # 全局单例跨测试存活：用完即清理，防污染其他测试文件
         registry.unregister("rag")
+
+
+def test_create_app_registers_domain_tools() -> None:
+    registry = get_tool_registry()
+    try:
+        bank_tool = registry.get("question_bank")
+        check_tool = registry.get("check_answer")
+        assert bank_tool is not None and bank_tool.name == "question_bank"
+        assert check_tool is not None and check_tool.name == "check_answer"
+    finally:
+        registry.unregister("question_bank")
+        registry.unregister("check_answer")

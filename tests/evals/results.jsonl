@@ -1,32 +1,32 @@
-{"case_id": "concept-basic-01", "total": 13, "violations": [], "notes": "引导阶段仅给一步提示并反问，学生答错后先定位到概念层错因，再逐级降级提示，最后才完整讲解；讲解含考点、思路、易错点三要素，巩固阶段给出变式题，公式基本用 LaTeX 表示。", "passed": true}
-{"case_id": "concept-basic-02", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，学生答错后先定位概念层错因再逐步降级，最后完整讲解含考点/思路/易错点，巩固阶段给出变式题，公式用LaTeX，整体符合期望行为。", "passed": true}
-{"case_id": "concept-basic-03", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，未直接给答案；学生答错后先定位概念层错因再逐步降级引导，最后讲解含考点/思路/易错点，巩固阶段给出变式题，公式用LaTeX，整体符合预期。", "passed": true}
+{"case_id": "concept-basic-01", "total": 13, "violations": [], "notes": "引导阶段仅给一步提示并反问，学生未作答后进入讲解；错因定位准确（概念层），降级阶梯清晰，讲解含考点/思路/易错点，巩固阶段有变式题，公式用LaTeX，符合预期。", "passed": true}
+{"case_id": "concept-basic-02", "total": 13, "violations": [], "notes": "引导阶段仅给一步提示并反问，学生答错后先定位概念层错因再逐步降级，最后讲解含考点/思路/易错点，巩固阶段给出变式题，公式用LaTeX，整体符合预期。", "passed": true}
+{"case_id": "concept-basic-03", "total": 13, "violations": [], "notes": "诊断阶段先反问定位，引导阶段仅给一步提示并让学生作答，学生答对后进入讲解，讲解含定义、等价性与前提易错点，巩固阶段给出变式题，公式用LaTeX，整体符合期望行为。", "passed": true}
 {"case_id": "concept-basic-04", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，未直接给答案；学生答错后先定位概念层错因再引导，降级阶梯清晰，讲解含考点/思路/易错点，巩固阶段有变式题，公式用LaTeX。", "passed": true}
-{"case_id": "calc-basic-01", "total": 12, "violations": [], "notes": "诊断阶段确认题意并反问卡点，引导阶段仅提示0/0型未定式与入手方向，未直接给答案；学生重复答案后进入讲解，含考点、三种思路与易错点，并给出变式题，LaTeX格式规范。", "passed": true}
-{"case_id": "calc-basic-02", "total": 13, "violations": [], "notes": "引导阶段仅用反问提示C，未直接给答案；学生答错后先定位概念层再逐步降级提示，最后讲解含考点/思路/易错点，巩固阶段给出变式题，公式均为LaTeX。", "passed": true}
-{"case_id": "calc-basic-03", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，学生答错后先定位到公式层再逐步降级，最后讲解含考点/思路/易错点，巩固阶段给出变式题，LaTeX 规范，整体符合期望行为。", "passed": true}
-{"case_id": "calc-basic-04", "total": 13, "violations": [], "notes": "引导阶段先纠正学生误判并只给一步反问，讲解含考点、思路与易错点，巩固阶段给出变式题，公式均为LaTeX，整体符合预期。", "passed": true}
-{"case_id": "proof-basic-01", "total": 13, "violations": [], "notes": "引导阶段仅反问并给最小提示，未直接给答案；学生说不会后先定位到概念层再讲解，讲解含考点/思路/易错点，巩固有变式题，LaTeX 规范。", "passed": true}
-{"case_id": "proof-basic-02", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，未泄露答案；学生答错后先定位“以图代证”的错因层再引导，降级阶梯清晰，讲解含考点/思路/易错点，巩固阶段给出变式题，公式均为LaTeX。", "passed": true}
-{"case_id": "concept-mid-01", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，学生答错后先定位概念层错因再逐步降级引导，讲解含考点/思路/易错点三要素，巩固阶段给出变式题，公式用LaTeX，整体符合预期。", "passed": true}
-{"case_id": "concept-mid-02", "total": 13, "violations": [], "notes": "引导阶段仅逐步反问未直接给答案，错因定位到概念层，降级阶梯清晰，讲解含考点/思路/易错点，巩固有变式题，LaTeX 基本规范。", "passed": true}
-{"case_id": "concept-mid-03", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，学生答错后先定位概念错因再逐步引导，最后才完整讲解，讲解含考点/思路/易错点，巩固阶段有变式题，公式用LaTeX，整体符合期望行为。", "passed": true}
-{"case_id": "concept-mid-04", "total": 13, "violations": [], "notes": "引导阶段先反问定义、学生答错后定位概念层错因并逐步降级提示，最后才完整讲解，讲解含考点/思路/易错点，巩固阶段给出变式题，公式用LaTeX，整体符合预期。", "passed": true}
-{"case_id": "calc-mid-01", "total": 13, "violations": [], "notes": "引导阶段仅反问分子形式，未直接给答案；错因定位到计算层并指出未真正写出式子；讲解含考点/思路/易错点，巩固有变式题，LaTeX规范。", "passed": true}
-{"case_id": "calc-mid-02", "total": 13, "violations": [], "notes": "引导阶段仅反问 u/dv 位置，未直接给答案；错因定位到概念层并说明选反后果；降级阶梯清晰，讲解含考点/思路/易错点，巩固有变式题，公式均为 LaTeX。", "passed": true}
-{"case_id": "calc-mid-03", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，学生答错后先定位概念层错因再逐步引导，讲解含考点/思路/易错点，巩固阶段给出变式题，LaTeX 规范，整体符合期望行为。", "passed": true}
-{"case_id": "calc-mid-04", "total": 12, "violations": [], "notes": "引导阶段仅给结构对照与配对关系反问，未直接给答案；讲解含考点、思路与通用方法，巩固有变式题，LaTeX 规范；学生未答错故错因定位项按中性给分。", "passed": true}
-{"case_id": "calc-mid-05", "total": 13, "violations": [], "notes": "诊断阶段先问卡点，引导阶段仅给截面形状与面积关系的提示并反问，未直接给公式；学生答对后讲解含考点、思路与易错点，巩固阶段给出变式题，LaTeX 使用规范。", "passed": true}
-{"case_id": "proof-mid-01", "total": 13, "violations": [], "notes": "诊断与引导阶段仅反问卡点、未泄露解法，讲解阶段四段完整且含考点/思路/易错点，巩固阶段给出变式题，LaTeX 规范，符合期望行为。", "passed": true}
-{"case_id": "proof-mid-02", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，学生不会后先定位概念层错因再完整讲解，讲解含考点/思路/易错点，巩固有变式题，公式为LaTeX，符合期望。", "passed": true}
-{"case_id": "concept-adv-01", "total": 13, "violations": [], "notes": "引导阶段仅用反问逐步提示，未直接给答案；学生答错后定位到概念混淆层再引导；讲解含考点、思路、易错点，巩固阶段给出变式题，公式用LaTeX。", "passed": true}
-{"case_id": "concept-adv-02", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，学生答不会后先定位概念层错因再进入讲解；讲解含考点、思路、易错点，巩固阶段给出变式题，公式基本用LaTeX，整体符合期望行为。", "passed": true}
-{"case_id": "calc-adv-01", "total": 13, "violations": [], "notes": "引导阶段仅用反问逐步提示，未直接给答案；错因定位到等价无穷小替换条件的概念层；讲解含考点、思路、易错点三要素；巩固阶段给出变式题；公式均为LaTeX格式。", "passed": true}
-{"case_id": "calc-adv-02", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，学生不会后进入讲解，四段完整且含变式题，LaTeX规范，无违规。", "passed": true}
-{"case_id": "calc-adv-03", "total": 12, "violations": [], "notes": "引导阶段未直接给答案，先反问求导对象与收敛区间，但错因定位偏概念层，学生实际是计算/初值处理问题，且学生未作答后直接进入完整讲解，降级阶梯略快。", "passed": true}
-{"case_id": "proof-adv-01", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，学生答不会后进入讲解，四段结构完整含考点思路易错点，变式题与LaTeX均达标，无违规。", "passed": true}
-{"case_id": "proof-adv-02", "total": 13, "violations": [], "notes": "引导阶段仅用反问逐步提示余项符号，未直接给答案；讲解阶段四段齐全并定位方法层错因，巩固阶段给出变式题，LaTeX 规范。", "passed": true}
-{"case_id": "proof-adv-03", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，学生未作答后进入讲解，四段讲解含考点/思路/易错点，巩固阶段给出变式题，公式用LaTeX，符合期望行为。", "passed": true}
-{"case_id": "proof-adv-04", "total": 13, "violations": [], "notes": "诊断与引导阶段仅反问和提示定义取反，未直接给答案；学生答不会后先定位概念层错因，再按最小提示→完整讲解的阶梯展开，讲解含考点/思路/易错点，巩固阶段给出变式题，公式均为LaTeX。", "passed": true}
-{"case_id": "proof-adv-05", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，学生不会后先定位概念层错因再降级讲解，讲解含考点/思路/易错点，巩固阶段给出变式题，公式用LaTeX，整体符合预期。", "passed": true}
-{"case_id": "proof-adv-06", "total": 12, "violations": [], "notes": "引导阶段仅给最小提示并反问，未直接给答案；讲解四段齐全含考点思路易错点，巩固有变式题，LaTeX 基本规范；错因定位稍显笼统，但整体符合预期。", "passed": true}
+{"case_id": "calc-basic-01", "total": 12, "violations": [], "notes": "诊断与引导阶段仅反问未泄题，讲解含考点/思路/易错点，巩固有变式题，LaTeX 规范；学生未答错故错因层按中性给分。", "passed": true}
+{"case_id": "calc-basic-02", "total": 13, "violations": [], "notes": "诊断阶段确认题意并反问卡点，引导阶段用概念性问题逐步提示且未直接给答案，学生答错后先定位到概念层再引导，最后才完整讲解，讲解含考点/思路/易错点，巩固阶段给出变式题，公式均用LaTeX，整体符合预期。", "passed": true}
+{"case_id": "calc-basic-03", "total": 13, "violations": [], "notes": "引导阶段仅反问幂函数求导指数处理，未直接给答案；学生答错后先定位公式层错因再引导，讲解含考点/思路/易错点，巩固有变式题，LaTeX规范。", "passed": true}
+{"case_id": "calc-basic-04", "total": 13, "violations": [], "notes": "引导阶段仅反问极限形式，未直接给答案；学生答对后讲解含考点、思路与易错点，并给出变式题，LaTeX 规范。", "passed": true}
+{"case_id": "proof-basic-01", "total": 13, "violations": [], "notes": "引导阶段仅给定义与化简提示并反问，未直接给答案；学生不会后先定位到方法层再完整讲解，四段齐全且含变式题，LaTeX 规范。", "passed": true}
+{"case_id": "proof-basic-02", "total": 13, "violations": [], "notes": "引导阶段仅反问周期定义并要求写出待证式，未直接给答案；学生答非所证后先定位“以图代证”的方法层错因，再降级到完整讲解，讲解含考点/思路/易错点，巩固阶段给出cos变式题，公式均为LaTeX。", "passed": true}
+{"case_id": "concept-mid-01", "total": 13, "violations": [], "notes": "引导阶段仅给一步提示并反问，学生答错后先定位概念层错因再逐步降级讲解，讲解含考点/思路/易错点，巩固阶段有变式题，公式用LaTeX，整体符合预期。", "passed": true}
+{"case_id": "concept-mid-02", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，学生答错后先定位概念层错因再逐步降级讲解，讲解含考点/思路/易错点，巩固阶段给出变式题，公式基本用 LaTeX，整体符合期望行为。", "passed": true}
+{"case_id": "concept-mid-03", "total": 13, "violations": [], "notes": "诊断阶段先问卡点，引导阶段一次只给一步提示并反问，学生未答后进入讲解，错因定位到概念层，讲解含考点/思路/易错点，巩固阶段给出变式题，公式用LaTeX，整体符合预期。", "passed": true}
+{"case_id": "concept-mid-04", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，未直接给答案；学生答错后先定位概念层错因再逐步引导，最后才完整讲解，讲解含考点/思路/易错点，巩固阶段有变式题，公式用LaTeX，符合期望行为。", "passed": true}
+{"case_id": "calc-mid-01", "total": 13, "violations": [], "notes": "引导阶段仅反问学生两次洛必达后的式子，未直接给答案；讲解阶段定位错因层为计算错误并给出三要素，巩固阶段有变式题，LaTeX 规范。", "passed": true}
+{"case_id": "calc-mid-02", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，未泄露答案；先定位方法层错因再逐步引导，最后才完整讲解，讲解含考点/思路/易错点，巩固阶段给出变式题，公式均为LaTeX。", "passed": true}
+{"case_id": "calc-mid-03", "total": 13, "violations": [], "notes": "引导阶段未直接给答案，先反问公式前提再提示改写形式；学生答错后定位为幂函数公式误用并继续引导；讲解含考点、思路、易错点，巩固有变式题，LaTeX 规范。", "passed": true}
+{"case_id": "calc-mid-04", "total": 12, "violations": [], "notes": "引导阶段仅反问连续变量与取对数形式，未直接给答案；讲解含考点、思路与等价无穷小易错提示，巩固阶段给出变式题，LaTeX 规范。", "passed": true}
+{"case_id": "calc-mid-05", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，未直接给答案；学生答错后先定位到公式/半径混淆层再讲解，讲解含考点、思路与易错点，巩固阶段给出变式题，LaTeX 使用规范。", "passed": true}
+{"case_id": "proof-mid-01", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，学生说不会后进入讲解，四段完整，含考点/思路/易错点与变式题，LaTeX 规范，无违规。", "passed": true}
+{"case_id": "proof-mid-02", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，未泄露完整解法；讲解含考点、思路、易错点，巩固阶段给出变式题，LaTeX 规范，整体符合期望行为。", "passed": true}
+{"case_id": "concept-adv-01", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，学生答错后先定位到量词顺序/概念层再逐步引导，最后才完整讲解，讲解含考点、思路、易错点，巩固阶段有变式题，公式用LaTeX，符合预期。", "passed": true}
+{"case_id": "concept-adv-02", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，学生答不会后先定位概念层错因再完整讲解，讲解含考点/思路/易错点，巩固有变式题，公式用LaTeX，整体符合预期。", "passed": true}
+{"case_id": "calc-adv-01", "total": 13, "violations": [], "notes": "引导阶段仅用反问逐步提示，未直接给答案；错因定位到等价无穷小替换条件这一概念层；讲解含考点、思路、易错点三要素；巩固阶段给出变式题；公式均为LaTeX格式。", "passed": true}
+{"case_id": "calc-adv-02", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，学生答不会后进入讲解，四段结构完整含考点/思路/易错点，巩固阶段给出变式题，公式均为LaTeX，符合期望行为。", "passed": true}
+{"case_id": "calc-adv-03", "total": 12, "violations": [], "notes": "引导阶段仅给最小提示并反问，未直接给答案；讲解阶段三要素齐全，变式题与LaTeX均达标，但错因定位稍显笼统，未完全区分学生具体计算错误。", "passed": true}
+{"case_id": "proof-adv-01", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，学生不会后进入讲解，四段完整且含变式题，LaTeX 规范，符合期望行为。", "passed": true}
+{"case_id": "proof-adv-02", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，未直接给答案；错因定位为方法层（只展开到一次项当等式用）；降级阶梯清晰，最后才完整讲解；讲解含考点、思路、易错点；巩固阶段给出变式题；公式均用 LaTeX。", "passed": true}
+{"case_id": "proof-adv-03", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，未直接给答案；讲解含考点、思路、易错点，巩固有变式题，公式用LaTeX，整体符合预期。", "passed": true}
+{"case_id": "proof-adv-04", "total": 13, "violations": [], "notes": "诊断阶段先问卡点，引导阶段只给否定定义方向并反问，学生说不会后进入讲解，四段完整且含考点/思路/易错点，巩固阶段给出变式题，公式均为LaTeX，符合预期行为。", "passed": true}
+{"case_id": "proof-adv-05", "total": 13, "violations": [], "notes": "诊断阶段先确认卡点，引导阶段仅给两步提示并反问，学生答不会后进入讲解，四段结构完整含考点/思路/易错点，巩固阶段给出变式题，公式用LaTeX，符合预期。", "passed": true}
+{"case_id": "proof-adv-06", "total": 13, "violations": [], "notes": "引导阶段仅给最小提示并反问，未泄露完整解法；学生重复卡壳后先定位方法层错因再降级讲解，讲解含考点/思路/易错点，巩固有变式题，LaTeX规范。", "passed": true}

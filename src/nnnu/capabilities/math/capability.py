@@ -11,6 +11,9 @@ v1 约定：ctx.user_message 即题目（学生带题来）；AI 出题练走 qu
 判答/估档位走 pedagogy.py（签名固定，Phase 2 可换判题工具）。
 讲解阶段经 rag 工具检索知识库（_collect_references），无工具/无索引时
 静默降级，不新增 LLM 调用。
+W6 起：引导判答经 check_answer 工具（_judge_via_tool）、巩固变式题经
+question_bank 工具（_collect_consolidation_question）——两者在工具缺失时
+都立即短路回退原实现，无工具路径提示词与调用数逐字节不变。
 """
 
 from __future__ import annotations
@@ -26,6 +29,7 @@ from nnnu.services.usage import UsageInfo, UsageTracker, get_usage_tracker
 
 from . import pedagogy
 from .prompts import (
+    CONSOLIDATE_BANK_PROMPT,
     CONSOLIDATE_PROMPT,
     DIAGNOSE_PROMPT,
     EXPLAIN_INSTRUCTION_SOLVED,
@@ -34,7 +38,9 @@ from .prompts import (
     HINT_PROMPT,
     REFERENCES_PROMPT,
     SYSTEM_PROMPT,
+    TOPIC_JSON_PROMPT,
 )
+from .topics import TOPICS
 
 
 async def _collect_references(
@@ -70,6 +76,103 @@ def _format_reference(src: dict[str, Any], index: int) -> str:
     return f"[{index}] {title}（相关度 {score:.2f}）：{excerpt}"
 
 
+async def _extract_topic(
+    llm: LLMClient,
+    question: str,
+    *,
+    on_usage: Callable[[UsageInfo], None] | None = None,
+) -> str | None:
+    """LLM 结构化提取考点（temperature=0）；解析失败/词表外返回 None。
+
+    返回 None 时调用方保守回退 LLM 出题（不做第二次尝试）。
+    """
+    text = await pedagogy._structured_call(
+        llm, TOPIC_JSON_PROMPT.format(question=question), on_usage=on_usage
+    )
+    data = pedagogy.extract_json(text) or {}
+    topic = str(data.get("topic", ""))
+    return topic if topic in TOPICS else None
+
+
+async def _collect_consolidation_question(
+    tools: ToolRegistry | None,
+    llm: LLMClient,
+    *,
+    question: str,
+    level: str,
+    on_usage: Callable[[UsageInfo], None] | None = None,
+) -> tuple[str, dict[str, Any] | None]:
+    """查 question_bank 取巩固变式题，返回 (变式题文本, bank item)。
+
+    无工具/无 question_bank 工具/提取失败/查库未命中/工具异常 → ("", None)，
+    调用方走既有 CONSOLIDATE_PROMPT 路径（提示词逐字节不变）。
+    硬约束：**工具不存在时绝不发起提取 LLM 调用**（无工具路径零新增调用）。
+    """
+    if tools is None:
+        return "", None
+    tool = tools.get("question_bank")
+    if tool is None:
+        return "", None
+    try:
+        topic = await _extract_topic(llm, question=question, on_usage=on_usage)
+        if topic is None:
+            return "", None
+        result = await tool.execute(topic=topic, level=level)
+    except Exception:
+        return "", None
+    if not result.success:
+        return "", None
+    item = result.metadata.get("item")
+    if not isinstance(item, dict) or not str(item.get("question", "")).strip():
+        return "", None
+    return str(item["question"]), item
+
+
+async def _judge_via_tool(
+    tools: ToolRegistry | None,
+    llm: LLMClient,
+    *,
+    question: str,
+    last_hint: str,
+    reply: str,
+    on_usage: Callable[[UsageInfo], None] | None = None,
+) -> pedagogy.Judgement | None:
+    """经 check_answer 工具判答；无工具/失败/结果不可解析返回 None。
+
+    返回 None 时调用方回退 pedagogy.judge_answer 直调（提示词、
+    temperature、调用次数、usage 全不变）。metadata 还原时重做词表
+    校验（镜像 judge_answer 的保守策略）。
+    """
+    if tools is None:
+        return None
+    tool = tools.get("check_answer")
+    if tool is None:
+        return None
+    result = await tool.execute(
+        question=question, last_hint=last_hint, reply=reply, on_usage=on_usage
+    )
+    if not result.success:
+        return None
+    data = result.metadata.get("judgement")
+    if not isinstance(data, dict):
+        return None
+    error_layer = str(data.get("error_layer", ""))
+    if error_layer not in pedagogy.ERROR_LAYERS:
+        error_layer = pedagogy.NO_ERROR_LAYER
+    next_step = str(data.get("next_step", ""))
+    if next_step not in (
+        pedagogy.NEXT_STEP_CONTINUE,
+        pedagogy.NEXT_STEP_SOLVED,
+        pedagogy.NEXT_STEP_EXPLAIN,
+    ):
+        next_step = pedagogy.NEXT_STEP_EXPLAIN
+    return pedagogy.Judgement(
+        correct=bool(data.get("correct")),
+        error_layer=error_layer,
+        next_step=next_step,
+    )
+
+
 class _UsageAccumulator:
     """把一轮中多次 LLM 调用的 token 用量加总，轮末一次记日志。"""
 
@@ -97,7 +200,7 @@ class MathTutorCapability(BaseCapability):
         name="math",
         description="考研数学（高等数学）陪练：诊断卡点→逐步引导→讲解→变式巩固",
         stages=["诊断", "引导", "讲解", "巩固"],
-        tools_used=["rag"],
+        tools_used=["rag", "check_answer", "question_bank"],
     )
 
     def __init__(
@@ -177,13 +280,22 @@ class MathTutorCapability(BaseCapability):
                     ).strip()
                     if not reply:
                         break  # 空输入（超时/断连）：不再追问，直接讲解
-                    judgement = await pedagogy.judge_answer(
+                    judgement = await _judge_via_tool(
+                        self._tools,
                         self._llm,
                         question=question,
                         last_hint=hint,
                         reply=reply,
                         on_usage=usage_acc.add,
                     )
+                    if judgement is None:
+                        judgement = await pedagogy.judge_answer(
+                            self._llm,
+                            question=question,
+                            last_hint=hint,
+                            reply=reply,
+                            on_usage=usage_acc.add,
+                        )
                     transcript.append(
                         f"提示（{pedagogy.HINT_LEVELS[hint_level]}）：{hint}\n"
                         f"学生答：{reply}\n"
@@ -233,11 +345,27 @@ class MathTutorCapability(BaseCapability):
 
             # ---- 巩固：变式题 + 方法总结 ----
             async with bus.stage("巩固", source=self.name):
-                await self._stream(
-                    CONSOLIDATE_PROMPT.format(question=question),
-                    bus,
+                variant, bank_item = await _collect_consolidation_question(
+                    self._tools,
+                    self._llm,
+                    question=question,
+                    level=str(ctx.metadata.get("level", pedagogy.DEFAULT_LEVEL)),
                     on_usage=usage_acc.add,
                 )
+                if bank_item is None:
+                    await self._stream(
+                        CONSOLIDATE_PROMPT.format(question=question),
+                        bus,
+                        on_usage=usage_acc.add,
+                    )
+                else:
+                    # 题库命中：题目直发总线，LLM 只写一句话总结（answer 不展示）
+                    await bus.content(f"变式题：{variant}", source=self.name, stage="巩固")
+                    await self._stream(
+                        CONSOLIDATE_BANK_PROMPT.format(question=question),
+                        bus,
+                        on_usage=usage_acc.add,
+                    )
         finally:
             # 轮末统一记用量；异常中断也记，保证成本可追踪（风险表"成本失控"）
             final_usage = usage_acc.usage()

@@ -17,6 +17,8 @@ from nnnu.capabilities.echo.capability import EchoCapability
 from nnnu.capabilities.math.capability import MathTutorCapability
 from nnnu.capabilities.quiz.capability import QuizCapability
 from nnnu.runtime.registry import get_capability_registry, get_tool_registry
+from nnnu.tools.bank.question_bank import QuestionBankTool
+from nnnu.tools.check_answer import CheckAnswerTool
 from nnnu.tools.rag_tool import RagTool
 
 # 仓库根目录下的 web/（src/nnnu/api/main.py → 上溯 3 层）
@@ -26,6 +28,8 @@ WEB_DIR = Path(__file__).resolve().parents[3] / "web"
 def create_app() -> FastAPI:
     # 先注册工具再注册能力：能力默认取全局工具注册表
     get_tool_registry().register(RagTool())
+    get_tool_registry().register(QuestionBankTool())
+    get_tool_registry().register(CheckAnswerTool())
     registry = get_capability_registry()
     registry.register(ChatCapability())
     registry.register(EchoCapability())
