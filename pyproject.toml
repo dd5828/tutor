@@ -18,6 +18,7 @@ dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
     "openai>=1.40,<3",
+    "numpy>=2.1",
 ]
 
 [project.optional-dependencies]
@@ -28,6 +29,11 @@ dev = [
     "ruff>=0.6",
     "mypy>=1.11",
     "httpx>=0.27",
+]
+# RAG 本地嵌入（fastembed + onnxruntime，体积大）：CI 只装 [dev] 不装本组，
+# 运行时按需延迟导入，未安装时服务优雅降级。
+rag = [
+    "fastembed>=0.4",
 ]
 
 [project.scripts]
