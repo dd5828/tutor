@@ -11,15 +11,24 @@ from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from typing import Any, cast
 
-from nnnu.capabilities.math.capability import MathTutorCapability
+from nnnu.capabilities.math.capability import MathTutorCapability, _collect_references
 from nnnu.capabilities.math.pedagogy import (
     DEFAULT_LEVEL,
     Judgement,
     estimate_level,
     judge_answer,
 )
-from nnnu.capabilities.math.prompts import SYSTEM_PROMPT
-from nnnu.core import ChatError, StreamBus, StreamEvent, StreamEventType, TurnContext
+from nnnu.capabilities.math.prompts import REFERENCES_PROMPT, SYSTEM_PROMPT
+from nnnu.core import (
+    BaseTool,
+    ChatError,
+    StreamBus,
+    StreamEvent,
+    StreamEventType,
+    ToolResult,
+    TurnContext,
+)
+from nnnu.runtime.registry import ToolRegistry
 from nnnu.services.llm import LLMClient
 from nnnu.services.usage import UsageInfo, UsageTracker
 
@@ -27,6 +36,7 @@ STAGE_START = StreamEventType.STAGE_START
 STAGE_END = StreamEventType.STAGE_END
 CONTENT = StreamEventType.CONTENT
 WAIT = StreamEventType.WAIT_FOR_INPUT
+SOURCES = StreamEventType.SOURCES
 
 
 @dataclass
@@ -75,11 +85,15 @@ class StubTracker:
 
 def _capability(
     responses: list[ScriptedResponse],
+    tools: ToolRegistry | None = None,
 ) -> tuple[MathTutorCapability, ScriptedLLM, StubTracker]:
     llm = ScriptedLLM(responses)
     tracker = StubTracker()
+    # 默认注入全新空注册表（不落全局单例）：本文件测试与知识库/其他测试隔离
     cap = MathTutorCapability(
-        llm=cast(LLMClient, llm), usage=cast(UsageTracker, tracker)
+        llm=cast(LLMClient, llm),
+        usage=cast(UsageTracker, tracker),
+        tools=tools if tools is not None else ToolRegistry(),
     )
     return cap, llm, tracker
 
@@ -129,7 +143,7 @@ async def test_manifest_fields() -> None:
     manifest = MathTutorCapability.manifest
     assert manifest.name == "math"
     assert manifest.stages == ["诊断", "引导", "讲解", "巩固"]
-    assert manifest.tools_used == []
+    assert manifest.tools_used == ["rag"]
 
 
 async def test_run_full_flow_stage_and_event_sequence() -> None:
@@ -339,3 +353,120 @@ async def test_estimate_level_falls_back_to_default() -> None:
     llm = ScriptedLLM([ScriptedResponse(["任意文本"])])
     level = await estimate_level(cast(LLMClient, llm), question="q", reply="r")
     assert level == DEFAULT_LEVEL
+
+
+# ── rag 工具接线（讲解阶段溯源）────────────────────────────────────────
+
+class StubRagTool:
+    """返回预置 ToolResult 的假 rag 工具，并记录 execute 调用参数。"""
+
+    name = "rag"
+
+    def __init__(self, result: ToolResult | None = None, error: Exception | None = None) -> None:
+        self._result = result if result is not None else ToolResult(success=False)
+        self._error = error
+        self.calls: list[dict[str, Any]] = []
+
+    async def execute(self, **kwargs: Any) -> ToolResult:
+        self.calls.append(kwargs)
+        if self._error is not None:
+            raise self._error
+        return self._result
+
+
+RAG_HITS = ToolResult(
+    content="找到 2 条与「罗尔定理证明题」相关的知识点：\n[1] …",
+    sources=[
+        {
+            "title": "05-微分中值定理·罗尔定理",
+            "excerpt": "罗尔定理：三个条件缺一不可…",
+            "score": 0.92,
+            "type": "rag_knowledge",
+        },
+        {
+            "title": "05-微分中值定理·辅助函数构造",
+            "excerpt": "构造辅助函数是使用罗尔定理的核心技巧…",
+            "score": 0.87,
+            "type": "rag_knowledge",
+        },
+    ],
+    metadata={"query": "罗尔定理证明题", "top_k": 5, "scores": [0.92, 0.87]},
+    success=True,
+)
+
+
+def _registry_with_rag(rag_tool: BaseTool) -> ToolRegistry:
+    registry = ToolRegistry()
+    registry.register(rag_tool)
+    return registry
+
+
+async def test_explain_uses_rag_references_and_emits_sources() -> None:
+    rag_tool = StubRagTool(RAG_HITS)
+    cap, llm, _ = _capability(
+        HAPPY_PATH, tools=_registry_with_rag(cast(BaseTool, rag_tool))
+    )
+    ctx = TurnContext(user_message="罗尔定理证明题")
+    events, error = await _drive(cap, ctx, ["卡在第一步", "是 0/0 型吧", "用洛必达"])
+
+    assert error is None
+    # SOURCES 事件：讲解 STAGE_START 之后、讲解第一条 content 之前
+    source_events = [e for e in events if e.type == SOURCES]
+    assert len(source_events) == 1
+    ev = source_events[0]
+    assert ev.stage == "讲解"
+    assert ev.metadata["sources"] == RAG_HITS.sources
+    assert ev.metadata["query"] == "罗尔定理证明题"
+    explain_start = next(
+        i for i, e in enumerate(events) if e.type == STAGE_START and e.stage == "讲解"
+    )
+    assert events.index(ev) == explain_start + 1
+    # 讲解 user 消息拼接了参考资料模板与命中摘要
+    explain_call = llm.calls[6]
+    assert REFERENCES_PROMPT.split("\n")[0] in explain_call["messages"][1]["content"]
+    assert "罗尔定理" in explain_call["messages"][1]["content"]
+    # 检索不新增 LLM 调用（仍为诊断/估档位/提示×2/判答×2/讲解/巩固 8 次）
+    assert len(llm.calls) == 8
+    # 检索查询词 = 题目原文
+    assert rag_tool.calls == [{"query": "罗尔定理证明题"}]
+
+
+async def test_explain_without_rag_tool_silently_skips() -> None:
+    cap, llm, _ = _capability(HAPPY_PATH, tools=ToolRegistry())
+    events, error = await _drive(
+        cap, TurnContext(user_message="求极限题"), ["卡住", "对", "对"]
+    )
+    assert error is None
+    assert not any(e.type == SOURCES for e in events)
+    assert "参考资料" not in llm.calls[6]["messages"][1]["content"]
+
+
+async def test_explain_rag_failure_silently_skips() -> None:
+    rag_tool = StubRagTool(ToolResult(content="知识库索引尚未构建", success=False))
+    cap, llm, _ = _capability(
+        HAPPY_PATH, tools=_registry_with_rag(cast(BaseTool, rag_tool))
+    )
+    events, error = await _drive(
+        cap, TurnContext(user_message="求极限题"), ["卡住", "对", "对"]
+    )
+    assert error is None
+    assert not any(e.type == SOURCES for e in events)
+    assert "参考资料" not in llm.calls[6]["messages"][1]["content"]
+    assert rag_tool.calls == [{"query": "求极限题"}]
+
+
+async def test_explain_rag_exception_silently_skips() -> None:
+    rag_tool = StubRagTool(error=RuntimeError("工具内部崩溃"))
+    cap, _, _ = _capability(
+        HAPPY_PATH, tools=_registry_with_rag(cast(BaseTool, rag_tool))
+    )
+    events, error = await _drive(
+        cap, TurnContext(user_message="求极限题"), ["卡住", "对", "对"]
+    )
+    assert error is None  # 工具异常不打断教学主流程
+    assert not any(e.type == SOURCES for e in events)
+
+
+async def test_collect_references_no_tool() -> None:
+    assert await _collect_references(None, "题") == ("", [])
+    assert await _collect_references(ToolRegistry(), "题") == ("", [])

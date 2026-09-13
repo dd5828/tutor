@@ -9,14 +9,18 @@
 
 v1 约定：ctx.user_message 即题目（学生带题来）；AI 出题练走 quiz 能力。
 判答/估档位走 pedagogy.py（签名固定，Phase 2 可换判题工具）。
+讲解阶段经 rag 工具检索知识库（_collect_references），无工具/无索引时
+静默降级，不新增 LLM 调用。
 """
 
 from __future__ import annotations
 
 import time
 from collections.abc import Callable
+from typing import Any
 
 from nnnu.core import BaseCapability, CapabilityManifest, StreamBus, TurnContext
+from nnnu.runtime.registry import ToolRegistry, get_tool_registry
 from nnnu.services.llm import LLMClient
 from nnnu.services.usage import UsageInfo, UsageTracker, get_usage_tracker
 
@@ -28,8 +32,42 @@ from .prompts import (
     EXPLAIN_INSTRUCTION_STUCK,
     EXPLAIN_PROMPT,
     HINT_PROMPT,
+    REFERENCES_PROMPT,
     SYSTEM_PROMPT,
 )
+
+
+async def _collect_references(
+    tools: ToolRegistry | None, question: str
+) -> tuple[str, list[dict[str, Any]]]:
+    """查 rag 工具取讲解参考资料；无工具/无索引/无命中/异常一律返回 ("", [])。
+
+    教学主流程不因知识库问题中断（完全静默降级）。换检索工具只改本函数
+    内部，不动 stage 流程。
+    """
+    if tools is None:
+        return "", []
+    tool = tools.get("rag")
+    if tool is None:
+        return "", []
+    try:
+        result = await tool.execute(query=question)
+    except Exception:
+        return "", []
+    if not result.success or not result.sources:
+        return "", []
+    refs = "\n".join(_format_reference(src, i) for i, src in enumerate(result.sources, 1))
+    return refs, result.sources
+
+
+def _format_reference(src: dict[str, Any], index: int) -> str:
+    title = str(src.get("title") or "资料")
+    try:
+        score = float(src.get("score") or 0.0)
+    except (TypeError, ValueError):
+        score = 0.0
+    excerpt = str(src.get("excerpt") or "")
+    return f"[{index}] {title}（相关度 {score:.2f}）：{excerpt}"
 
 
 class _UsageAccumulator:
@@ -59,17 +97,20 @@ class MathTutorCapability(BaseCapability):
         name="math",
         description="考研数学（高等数学）陪练：诊断卡点→逐步引导→讲解→变式巩固",
         stages=["诊断", "引导", "讲解", "巩固"],
-        tools_used=[],
+        tools_used=["rag"],
     )
 
     def __init__(
         self,
         llm: LLMClient | None = None,
         usage: UsageTracker | None = None,
+        tools: ToolRegistry | None = None,
     ) -> None:
-        # 测试可注入假 LLMClient / 假 tracker；生产用环境变量与全局单例。
+        # 测试可注入假 LLMClient / 假 tracker / 假注册表；生产用环境变量与
+        # 全局单例。无 rag 工具（未注册或索引未构建）时讲解阶段静默降级。
         self._llm = llm if llm is not None else LLMClient()
         self._usage = usage if usage is not None else get_usage_tracker()
+        self._tools = tools if tools is not None else get_tool_registry()
 
     async def _stream(
         self,
@@ -167,21 +208,28 @@ class MathTutorCapability(BaseCapability):
 
             # ---- 讲解：四段结构（已解出则收尾总结），回扣错因 ----
             async with bus.stage("讲解", source=self.name):
-                await self._stream(
-                    EXPLAIN_PROMPT.format(
-                        question=question,
-                        stuck_point=stuck,
-                        error_layer=error_layer or "无",
-                        transcript="\n".join(transcript) or "（无引导历史）",
-                        explain_instruction=(
-                            EXPLAIN_INSTRUCTION_SOLVED
-                            if solved
-                            else EXPLAIN_INSTRUCTION_STUCK
-                        ),
+                references, sources = await _collect_references(self._tools, question)
+                if sources:
+                    await bus.sources(
+                        sources, source=self.name, stage="讲解", metadata={"query": question}
+                    )
+                explain_prompt = EXPLAIN_PROMPT.format(
+                    question=question,
+                    stuck_point=stuck,
+                    error_layer=error_layer or "无",
+                    transcript="\n".join(transcript) or "（无引导历史）",
+                    explain_instruction=(
+                        EXPLAIN_INSTRUCTION_SOLVED
+                        if solved
+                        else EXPLAIN_INSTRUCTION_STUCK
                     ),
-                    bus,
-                    on_usage=usage_acc.add,
                 )
+                # 仅在检索有命中时拼接参考资料（无命中路径提示词与改造前逐字节一致）
+                if references:
+                    explain_prompt = (
+                        f"{explain_prompt}\n\n{REFERENCES_PROMPT.format(references=references)}"
+                    )
+                await self._stream(explain_prompt, bus, on_usage=usage_acc.add)
 
             # ---- 巩固：变式题 + 方法总结 ----
             async with bus.stage("巩固", source=self.name):

@@ -21,6 +21,13 @@
   .bubble.user { align-self: flex-end; background: var(--user); }
   .bubble.assistant { align-self: flex-start; background: var(--panel); border: 1px solid #e5e7eb; }
   .bubble.error { align-self: flex-start; background: #fee2e2; color: var(--error); }
+  .sources { max-width: 78%; align-self: flex-start; background: #f8fafc;
+             border: 1px solid #e5e7eb; border-left: 3px solid var(--accent);
+             border-radius: 8px; padding: 6px 12px; }
+  .sources .src-title { font-size: 12px; font-weight: 600; color: var(--accent); }
+  .sources .src-item { font-size: 12px; color: var(--muted); padding: 3px 0;
+                       border-bottom: 1px dashed #e5e7eb; }
+  .sources .src-item:last-child { border-bottom: none; }
   footer { display: flex; gap: 8px; padding: 10px 16px; background: var(--panel); border-top: 1px solid #e5e7eb; }
   #input { flex: 1; padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; }
   #send { padding: 9px 18px; border: none; border-radius: 8px; background: var(--accent);
@@ -86,6 +93,26 @@ function handleEvent(e) {
       currentBubble.textContent += e.content;
       log.scrollTop = log.scrollHeight;
       break;
+    case 'sources': {
+      const list = e.metadata && e.metadata.sources;
+      if (!Array.isArray(list) || list.length === 0) break;
+      const bar = document.createElement('div');
+      bar.className = 'sources';
+      const head = document.createElement('div');
+      head.className = 'src-title';
+      head.textContent = '参考资料';
+      bar.appendChild(head);
+      for (const s of list) {
+        const item = document.createElement('div');
+        item.className = 'src-item';
+        const score = (typeof s.score === 'number') ? '（相关度 ' + s.score.toFixed(2) + '）' : '';
+        item.textContent = (s.title || '资料') + score + '：' + (s.excerpt || '');
+        bar.appendChild(item);
+      }
+      log.appendChild(bar);
+      log.scrollTop = log.scrollHeight;
+      break;
+    }
     case 'wait_for_input':
       state = 'awaiting';
       currentBubble = null;

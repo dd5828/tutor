@@ -8,7 +8,7 @@ from typing import Any, cast
 from fastapi.testclient import TestClient
 
 from nnnu.api.main import create_app
-from nnnu.runtime.registry import get_capability_registry
+from nnnu.runtime.registry import get_capability_registry, get_tool_registry
 
 
 def _recv(ws: Any) -> dict[str, Any]:
@@ -100,3 +100,14 @@ def test_create_app_registers_math_capability() -> None:
 
     assert capability is not None
     assert capability.manifest.stages == ["诊断", "引导", "讲解", "巩固"]
+
+
+def test_create_app_registers_rag_tool() -> None:
+    registry = get_tool_registry()
+    try:
+        tool = registry.get("rag")
+        assert tool is not None
+        assert tool.name == "rag"
+    finally:
+        # 全局单例跨测试存活：用完即清理，防污染其他测试文件
+        registry.unregister("rag")
