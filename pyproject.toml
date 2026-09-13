@@ -18,7 +18,9 @@ dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
     "openai>=1.40,<3",
-    "numpy>=2.1",
+    # <2.5：numpy 2.5 起放弃 Python 3.11、stub 用 PEP 695 type 语句，
+    # 与 mypy python_version=3.11（按最低支持版本检查）冲突会直接报语法错
+    "numpy>=2.1,<2.5",
 ]
 
 [project.optional-dependencies]
